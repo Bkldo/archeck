@@ -1,0 +1,313 @@
+﻿<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบรับเรื่องตรวจพื้นที่</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="เมนูหลัก">
+      <div class="brand-block">
+        <div class="brand-mark"><i data-lucide="map-pinned"></i></div>
+        <div>
+          <p class="eyebrow">Field Service</p>
+          <h1 id="appTitleSide">ระบบรับเรื่องตรวจพื้นที่</h1>
+        </div>
+      </div>
+      <nav class="nav-stack">
+        <button class="nav-item active" data-view="reportView"><i data-lucide="file-plus-2"></i><span>แจ้งเรื่อง</span></button>
+        <button class="nav-item" data-view="trackView"><i data-lucide="list-filter"></i><span>ติดตามสถานะ</span></button>
+        <button class="nav-item" data-view="adminView"><i data-lucide="shield-check"></i><span>ผู้ดูแลระบบ</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="mapButton" class="ghost-button" type="button"><i data-lucide="map"></i><span>เปิดแผนที่</span></button>
+        <p id="organizationName">หน่วยงานของคุณ</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button id="mobileMenuButton" class="icon-button mobile-only" type="button" aria-label="เปิดเมนู"><i data-lucide="menu"></i></button>
+        <div>
+          <p class="eyebrow">ระบบรับเรื่องและติดตามการแก้ไข</p>
+          <h2 id="pageTitle">แจ้งเรื่องตรวจพื้นที่</h2>
+        </div>
+        <div class="topbar-actions">
+          <button id="refreshButton" class="secondary-button" type="button"><i data-lucide="refresh-cw"></i><span>โหลดข้อมูล</span></button>
+        </div>
+      </header>
+
+      <section class="view active" id="reportView">
+        <div class="split-layout">
+          <section class="panel form-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">แบบฟอร์มรับเรื่อง</p>
+                <h3>แจ้งปัญหาที่พบจากการตรวจพื้นที่</h3>
+              </div>
+              <span class="status-pill received">รับเรื่องทันที</span>
+            </div>
+            <form id="reportForm" class="stacked-form">
+              <div class="field-grid two">
+                <label>วันที่พบปัญหา
+                  <input type="datetime-local" name="reportDate">
+                </label>
+                <label>ประเภทปัญหา
+                  <select name="category" required>
+                    <option value="">เลือกประเภท</option>
+                    <option>ความสะอาด</option>
+                    <option>ถนน/ทางเท้า</option>
+                    <option>ไฟฟ้า/แสงสว่าง</option>
+                    <option>น้ำท่วม/ระบายน้ำ</option>
+                    <option>สิ่งกีดขวาง</option>
+                    <option>ความปลอดภัย</option>
+                    <option>อื่นๆ</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>สถานที่พบปัญหา
+                <input type="text" name="locationName" placeholder="เช่น ซอย/ถนน/จุดสังเกต" required>
+              </label>
+
+              <label>รายละเอียดปัญหา
+                <textarea name="problem" rows="5" placeholder="อธิบายปัญหาให้ชัดเจน เช่น จุดเกิดเหตุ สภาพปัญหา ความเร่งด่วน" required></textarea>
+              </label>
+
+              <div class="field-grid two">
+                <label>ผู้แจ้ง
+                  <input type="text" name="reporterName" placeholder="ชื่อผู้แจ้ง" required>
+                </label>
+                <label>เบอร์โทร
+                  <input type="tel" name="phone" placeholder="เบอร์ติดต่อกลับ">
+                </label>
+              </div>
+
+              <div class="field-grid two">
+                <label>ฝ่าย/ชุมชน/หน่วยงาน
+                  <input type="text" name="department" placeholder="ระบุหน่วยงานหรือชุมชน">
+                </label>
+                <label>ความเร่งด่วน
+                  <select name="priority">
+                    <option>ปกติ</option>
+                    <option>เร่งด่วน</option>
+                    <option>วิกฤต</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="upload-field">
+                <label for="beforeImage">ภาพก่อนแก้ไข</label>
+                <input id="beforeImage" type="file" name="beforeImage" accept="image/*">
+                <p>รองรับไฟล์ภาพไม่เกิน 10 MB</p>
+              </div>
+
+              <input type="hidden" name="geoStamp">
+              <input type="hidden" name="geoCode">
+              <input type="hidden" name="geoAddress">
+
+              <div class="form-actions">
+                <button id="geoButton" class="secondary-button" type="button"><i data-lucide="crosshair"></i><span>ใช้ตำแหน่งปัจจุบัน</span></button>
+                <button class="primary-button" type="submit"><i data-lucide="send"></i><span>ส่งเรื่อง</span></button>
+              </div>
+            </form>
+          </section>
+
+          <aside class="panel summary-panel">
+            <p class="eyebrow">ภาพรวมล่าสุด</p>
+            <div class="metric-grid compact">
+              <div class="metric"><span id="statTotal">0</span><p>ทั้งหมด</p></div>
+              <div class="metric"><span id="statProgress">0</span><p>กำลังทำ</p></div>
+              <div class="metric"><span id="statDone">0</span><p>เสร็จสิ้น</p></div>
+              <div class="metric"><span id="statUrgent">0</span><p>เร่งด่วน</p></div>
+            </div>
+            <div class="notice-box">
+              <i data-lucide="bell-ring"></i>
+              <div>
+                <h4>แจ้งเตือนอัตโนมัติ</h4>
+                <p>เมื่อมีการส่งเรื่อง ระบบจะบันทึกลง Google Sheet และส่งข้อความเข้า Telegram หากตั้งค่า Token และ Chat ID แล้ว</p>
+              </div>
+            </div>
+            <div class="latest-list" id="latestList"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="trackView">
+        <section class="panel">
+          <div class="panel-heading responsive-heading">
+            <div>
+              <p class="eyebrow">ติดตามสถานะ</p>
+              <h3>รายการเรื่องแจ้งทั้งหมด</h3>
+            </div>
+            <div class="filter-row">
+              <input id="searchInput" type="search" placeholder="ค้นหาเลขรับเรื่อง สถานที่ หรือปัญหา">
+              <select id="statusFilter">
+                <option value="all">ทุกสถานะ</option>
+              </select>
+            </div>
+          </div>
+          <div id="publicReports" class="report-grid"></div>
+          <div id="emptyPublic" class="empty-state hidden"><i data-lucide="inbox"></i><p>ยังไม่มีรายการรับเรื่อง</p></div>
+        </section>
+      </section>
+
+      <section class="view" id="adminView">
+        <div id="loginPanel" class="panel auth-panel">
+          <div class="auth-copy">
+            <p class="eyebrow">Admin Console</p>
+            <h3>เข้าสู่ระบบเพื่อสรุปผลและบันทึกการแก้ไข</h3>
+            <p>ค่าเริ่มต้นเมื่อสร้างระบบใหม่คือผู้ใช้ <strong>admin</strong> รหัส <strong>admin123</strong> ควรเปลี่ยนในชีต Users หลังติดตั้งจริง</p>
+          </div>
+          <form id="loginForm" class="stacked-form narrow-form">
+            <label>ชื่อผู้ใช้
+              <input type="text" name="username" autocomplete="username" required>
+            </label>
+            <label>รหัสผ่าน
+              <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <button class="primary-button" type="submit"><i data-lucide="log-in"></i><span>เข้าสู่ระบบ</span></button>
+          </form>
+        </div>
+
+        <div id="adminPanel" class="hidden">
+          <div class="admin-header">
+            <div>
+              <p class="eyebrow">Admin Console</p>
+              <h3>จัดการเรื่องแจ้งและสรุปผลแก้ไข</h3>
+              <p id="adminUserLabel"></p>
+            </div>
+            <div class="admin-actions">
+              <button id="settingsButton" class="secondary-button" type="button"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
+              <button id="logoutButton" class="ghost-button" type="button"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button>
+            </div>
+          </div>
+
+          <div class="metric-grid admin-metrics">
+            <div class="metric"><span id="adminTotal">0</span><p>ทั้งหมด</p></div>
+            <div class="metric"><span id="adminReceived">0</span><p>รับเรื่องแล้ว</p></div>
+            <div class="metric"><span id="adminProgress">0</span><p>กำลังดำเนินการ</p></div>
+            <div class="metric"><span id="adminCompleted">0</span><p>เสร็จสิ้น</p></div>
+          </div>
+
+          <section class="panel admin-table-panel">
+            <div class="panel-heading responsive-heading">
+              <div>
+                <p class="eyebrow">รายการสำหรับแอดมิน</p>
+                <h3>ตารางติดตามงาน</h3>
+              </div>
+              <div class="filter-row">
+                <input id="adminSearchInput" type="search" placeholder="ค้นหารายการ">
+                <select id="adminStatusFilter"></select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>รหัส</th><th>สถานะ</th><th>ประเภท</th><th>สถานที่/ปัญหา</th><th>ความเร่งด่วน</th><th>ผู้รับผิดชอบ</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="editModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="modal-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">บันทึกผลแก้ไข</p>
+          <h3 id="editTitle">อัปเดตรายการ</h3>
+        </div>
+        <button class="icon-button" data-close-modal type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div id="editPreview" class="edit-preview"></div>
+      <form id="editForm" class="stacked-form">
+        <input type="hidden" name="token">
+        <input type="hidden" name="reportId">
+        <div class="field-grid two">
+          <label>สถานะ
+            <select name="status" required></select>
+          </label>
+          <label>ความเร่งด่วน
+            <select name="priority"></select>
+          </label>
+        </div>
+        <label>ผู้รับผิดชอบ
+          <input type="text" name="assignedTo" placeholder="ชื่อเจ้าหน้าที่หรือหน่วยงาน">
+        </label>
+        <label>สรุปผล/หมายเหตุ
+          <textarea name="adminNote" rows="4" placeholder="สรุปวิธีแก้ไข ผลดำเนินการ หรือเหตุผลการยกเลิก"></textarea>
+        </label>
+        <div class="upload-field">
+          <label for="afterImage">ภาพหลังแก้ไข</label>
+          <input id="afterImage" type="file" name="afterImage" accept="image/*">
+        </div>
+        <div class="form-actions right">
+          <button class="secondary-button" data-close-modal type="button">ยกเลิก</button>
+          <button class="primary-button" type="submit"><i data-lucide="save"></i><span>บันทึก</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card settings-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">System Settings</p>
+          <h3 id="settingsTitle">ตั้งค่าระบบ</h3>
+        </div>
+        <button class="icon-button" data-close-settings type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <form id="settingsForm" class="stacked-form">
+        <label>ชื่อระบบ
+          <input type="text" name="APP_TITLE">
+        </label>
+        <label>ชื่อหน่วยงาน
+          <input type="text" name="ORGANIZATION_NAME">
+        </label>
+        <label>Telegram Bot Token
+          <input type="text" name="TELEGRAM_BOT_TOKEN" placeholder="123456:ABC...">
+        </label>
+        <label>Telegram Chat ID
+          <input type="text" name="TELEGRAM_CHAT_ID" placeholder="เช่น -1001234567890">
+        </label>
+        <label>ลิงก์แผนที่
+          <input type="url" name="MAP_URL" placeholder="https://www.google.com/maps/...">
+        </label>
+        <label>Drive Folder ID สำหรับเก็บรูป
+          <input type="text" name="DRIVE_FOLDER_ID">
+        </label>
+        <label>แสดงรายการสาธารณะ
+          <select name="PUBLIC_LIST_ENABLED">
+            <option value="TRUE">TRUE</option>
+            <option value="FALSE">FALSE</option>
+          </select>
+        </label>
+        <div class="form-actions right">
+          <button class="secondary-button" data-close-settings type="button">ยกเลิก</button>
+          <button class="primary-button" type="submit"><i data-lucide="save"></i><span>บันทึกการตั้งค่า</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
