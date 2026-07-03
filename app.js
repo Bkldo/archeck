@@ -41,10 +41,30 @@ async function serverCall(name) {
   const args = Array.prototype.slice.call(arguments, 1);
   const action = ACTION_MAP[name] || name;
   const payload = await normalizePayload(action, args[0]);
-  if (action === 'bootstrap' || action === 'listReports') {
+  if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
     return apiJsonp(action, payload);
   }
-  return apiPost(action, payload);
+  if (action === 'createReport') {
+    await apiPostNoCors(action, payload);
+    await delay(4500);
+    const fresh = await apiJsonp('bootstrap', {});
+    return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', reports: fresh.reports || [], stats: fresh.stats || {} };
+  }
+  if (action === 'updateReport') {
+    await apiPostNoCors(action, payload);
+    await delay(4500);
+    const admin = await apiJsonp('getAdminReports', { token: payload.token });
+    const publicData = await apiJsonp('bootstrap', {});
+    return {
+      ok: admin && admin.ok !== false,
+      message: 'บันทึกผลแก้ไขเรียบร้อย',
+      reports: admin.reports || [],
+      publicReports: publicData.reports || [],
+      stats: admin.stats || {}
+    };
+  }
+  await apiPostNoCors(action, payload);
+  return { ok: true, message: 'ส่งข้อมูลเรียบร้อย' };
 }
 
 async function normalizePayload(action, data) {
@@ -91,7 +111,8 @@ function apiJsonp(action, payload) {
     if (payload && typeof payload === 'object') {
       Object.keys(payload).forEach(function(key) {
         const value = payload[key];
-        if (value != null && typeof value !== 'object') params.set(key, value);
+        if (value == null) return;
+        params.set(key, typeof value === 'object' ? JSON.stringify(value) : value);
       });
     }
     const cleanup = function() {
@@ -116,46 +137,19 @@ function apiJsonp(action, payload) {
   });
 }
 
-function apiPost(action, payload) {
-  return new Promise(function(resolve, reject) {
-    const callbackId = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-    const iframe = document.createElement('iframe');
-    const form = document.createElement('form');
-    const input = document.createElement('input');
-    const cleanup = function() {
-      window.removeEventListener('message', onMessage);
-      iframe.remove();
-      form.remove();
-      clearTimeout(timer);
-    };
-    const timer = setTimeout(function() {
-      cleanup();
-      reject(new Error('Google Apps Script ไม่ตอบกลับภายในเวลาที่กำหนด'));
-    }, 60000);
-    const onMessage = function(event) {
-      const data = event.data || {};
-      if (!data || data.source !== 'field-report-api' || data.callbackId !== callbackId) return;
-      cleanup();
-      resolve(data.payload);
-    };
-    window.addEventListener('message', onMessage);
-    iframe.name = 'fieldReportFrame_' + callbackId;
-    iframe.className = 'api-frame';
-    iframe.style.display = 'none';
-    form.method = 'POST';
-    form.target = iframe.name;
-    form.action = SCRIPT_URL + (SCRIPT_URL.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams({ action: action, callbackId: callbackId }).toString();
-    form.style.display = 'none';
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(payload == null ? {} : payload);
-    form.appendChild(input);
-    document.body.appendChild(iframe);
-    document.body.appendChild(form);
-    form.submit();
-  });
+function delay(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
 }
 
+function apiPostNoCors(action, payload) {
+  const body = new URLSearchParams();
+  body.set('payload', JSON.stringify(payload == null ? {} : payload));
+  return fetch(SCRIPT_URL + (SCRIPT_URL.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams({ action: action }).toString(), {
+    method: 'POST',
+    mode: 'no-cors',
+    body: body.toString()
+  });
+}
 function loadBootstrap() {
   setBusy(document.getElementById('refreshButton'), true);
   serverCall('getBootstrapData')
@@ -309,7 +303,7 @@ function submitReport(event) {
       renderAll(result.stats || buildLocalStats(state.reports));
       form.reset();
       setDefaultDate();
-      toast('ส่งเรื่องเรียบร้อย เลขรับเรื่อง ' + result.report.id);
+      toast(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย เลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย ระบบกำลังอัปเดตรายการ');
       showView('trackView');
     })
     .catch(showError)
@@ -557,3 +551,7 @@ function esc(value) {
 
 function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+
+
+
