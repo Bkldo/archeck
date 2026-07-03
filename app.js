@@ -77,6 +77,9 @@ async function normalizePayload(action, data) {
   if (data instanceof HTMLFormElement) {
     return formToPayload(data);
   }
+  if (typeof data === 'string' && (action === 'getAdminReports' || action === 'listReports' || action === 'saveSettings')) {
+    return { token: data };
+  }
   return data == null ? {} : data;
 }
 
@@ -253,8 +256,14 @@ function loadBootstrap(isManual) {
       renderAll(result.stats || {});
       if (state.token) restoreAdminSession();
       const initial = String(window.__INITIAL_PAGE__ || '').toLowerCase();
-      if (initial === 'login' || initial === 'adminpage' || initial === 'admin') showView('adminView');
-      if (initial === 'table' || initial === 'track') showView('trackView');
+      const savedView = sessionStorage.getItem('activeViewId');
+      if (initial === 'login' || initial === 'adminpage' || initial === 'admin') {
+        showView('adminView');
+      } else if (initial === 'table' || initial === 'track') {
+        showView('trackView');
+      } else if (savedView && !manual) {
+        showView(savedView);
+      }
       if (manual) showSuccessPopup('โหลดข้อมูลล่าสุดเรียบร้อยแล้ว');
     })
     .catch(function(err) {
@@ -303,6 +312,7 @@ function setDefaultDate() {
 }
 
 function showView(viewId) {
+  if (viewId) sessionStorage.setItem('activeViewId', viewId);
   document.querySelectorAll('.view').forEach(function(view) { view.classList.toggle('active', view.id === viewId); });
   document.querySelectorAll('.nav-item').forEach(function(button) { button.classList.toggle('active', button.dataset.view === viewId); });
   document.getElementById('pageTitle').textContent = pageTitles[viewId] || pageTitles.reportView;
@@ -547,7 +557,7 @@ function submitLogin(event) {
 
 function restoreAdminSession() {
   if (!checkSessionExpiration()) return;
-  serverCall('getAdminReports', state.token)
+  serverCall('getAdminReports', { token: state.token })
     .then(function(result) {
       if (!result || !result.ok) throw new Error('session หมดอายุ');
       state.user = { displayName: 'ผู้ดูแลระบบ' };
@@ -556,6 +566,8 @@ function restoreAdminSession() {
       applySettings();
       renderAdmin(result.stats);
       startSessionTimer();
+      const savedView = sessionStorage.getItem('activeViewId');
+      if (savedView === 'adminView') showView('adminView');
     })
     .catch(function() { logoutAdmin(false); });
 }
@@ -672,6 +684,9 @@ function logoutAdmin(showMessage) {
   state.adminReports = [];
   sessionStorage.removeItem('fieldReportToken');
   sessionStorage.removeItem('fieldReportTokenExpire');
+  if (sessionStorage.getItem('activeViewId') === 'adminView') {
+    sessionStorage.setItem('activeViewId', 'reportView');
+  }
   document.getElementById('loginPanel').classList.remove('hidden');
   document.getElementById('adminPanel').classList.add('hidden');
   if (showMessage !== false) toast('ออกจากระบบแล้ว');
