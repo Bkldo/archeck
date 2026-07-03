@@ -1,4 +1,4 @@
-﻿const API_CONFIG = window.FIELD_REPORT_CONFIG || {};
+const API_CONFIG = window.FIELD_REPORT_CONFIG || {};
 const SCRIPT_URL = String(API_CONFIG.SCRIPT_URL || '').trim();
 const ACTION_MAP = {
   getBootstrapData: 'bootstrap',
@@ -44,17 +44,21 @@ async function serverCall(name) {
   if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
     return apiJsonp(action, payload);
   }
+  // For createReport / updateReport: try iframe postMessage first, fall back to no-cors + short delay
+  var result = await apiPostWithResponse(action, payload);
+  if (result && result.ok !== undefined) return result;
+  // Fallback: fire-and-forget POST then re-fetch
+  await apiPostNoCors(action, payload);
+  await delay(1500);
   if (action === 'createReport') {
-    await apiPostNoCors(action, payload);
-    await delay(4500);
     const fresh = await apiJsonp('bootstrap', {});
     return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', reports: fresh.reports || [], stats: fresh.stats || {} };
   }
   if (action === 'updateReport') {
-    await apiPostNoCors(action, payload);
-    await delay(4500);
-    const admin = await apiJsonp('getAdminReports', { token: payload.token });
-    const publicData = await apiJsonp('bootstrap', {});
+    const [admin, publicData] = await Promise.all([
+      apiJsonp('getAdminReports', { token: payload.token }),
+      apiJsonp('bootstrap', {})
+    ]);
     return {
       ok: admin && admin.ok !== false,
       message: 'บันทึกผลแก้ไขเรียบร้อย',
@@ -63,7 +67,6 @@ async function serverCall(name) {
       stats: admin.stats || {}
     };
   }
-  await apiPostNoCors(action, payload);
   return { ok: true, message: 'ส่งข้อมูลเรียบร้อย' };
 }
 
@@ -148,6 +151,52 @@ function apiPostNoCors(action, payload) {
     method: 'POST',
     mode: 'no-cors',
     body: body.toString()
+  });
+}
+
+function apiPostWithResponse(action, payload) {
+  return new Promise(function(resolve) {
+    var callbackId = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'postFrame_' + callbackId;
+    var resolved = false;
+    var timer = setTimeout(function() {
+      if (!resolved) { resolved = true; cleanup(); resolve(null); }
+    }, 25000);
+    function onMessage(event) {
+      if (resolved) return;
+      var data = event.data;
+      if (data && data.source === 'field-report-api' && data.callbackId === callbackId) {
+        resolved = true;
+        cleanup();
+        resolve(data.payload || null);
+      }
+    }
+    function cleanup() {
+      clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      setTimeout(function() { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 200);
+    }
+    window.addEventListener('message', onMessage);
+    document.body.appendChild(iframe);
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = iframe.name;
+    function addField(name, value) {
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    }
+    addField('action', action);
+    addField('callbackId', callbackId);
+    addField('payload', JSON.stringify(payload == null ? {} : payload));
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
   });
 }
 function loadBootstrap() {
