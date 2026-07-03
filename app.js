@@ -361,7 +361,7 @@ function renderPublicReports() {
 }
 
 function renderReportCard(report) {
-  return '<article class="report-card">' +
+  return '<article class="report-card" onclick="openReportDetail(\'' + escJs(report.id) + '\')" style="cursor:pointer">' +
     '<div class="report-image-pair">' + imageSlot('ก่อน', report.beforeImageUrl) + imageSlot('หลัง', report.afterImageUrl) + '</div>' +
     '<div class="report-card-body">' +
       '<div class="card-meta"><span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></div>' +
@@ -373,9 +373,101 @@ function renderReportCard(report) {
 }
 
 function imageSlot(label, url) {
-  if (url) return '<div class="image-slot"><b>' + esc(label) + '</b><img src="' + escAttr(url) + '" alt="ภาพ' + escAttr(label) + '"></div>';
+  if (url) return '<div class="image-slot"><b>' + esc(label) + '</b><img src="' + escAttr(url) + '" alt="ภาพ' + escAttr(label) + '" onclick="openLightbox(\'' + escAttr(url) + '\', event)"></div>';
   return '<div class="image-slot"><b>' + esc(label) + '</b><span>ยังไม่มีภาพ</span></div>';
 }
+
+function openReportDetail(id) {
+  var report = state.reports.find(function(r) { return r.id === id; });
+  if (!report && state.adminReports.length) report = state.adminReports.find(function(r) { return r.id === id; });
+  if (!report) return;
+  var modal = document.getElementById('detailModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'detailModal';
+    modal.className = 'modal hidden';
+    modal.setAttribute('role', 'dialog');
+    modal.innerHTML = '<div class="modal-card detail-modal-card">' +
+      '<div class="modal-heading"><div><p class="eyebrow">รายละเอียดเรื่องแจ้ง</p><h3 id="detailTitle"></h3></div>' +
+      '<button class="icon-button" type="button" aria-label="ปิด" onclick="closeDetailModal()"><i data-lucide="x"></i></button></div>' +
+      '<div id="detailImages" class="detail-images"></div>' +
+      '<div id="detailBody" class="detail-body"></div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  }
+  document.getElementById('detailTitle').textContent = report.id + ' · ' + report.locationName;
+  var imgHtml = '<div class="detail-image-pair">';
+  imgHtml += detailImageBox('ภาพก่อนแก้ไข', report.beforeImageUrl);
+  imgHtml += detailImageBox('ภาพหลังแก้ไข', report.afterImageUrl);
+  imgHtml += '</div>';
+  document.getElementById('detailImages').innerHTML = imgHtml;
+  var fields = [
+    ['รหัสเรื่อง', report.id],
+    ['สถานะ', '<span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span>'],
+    ['ความเร่งด่วน', '<span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span>'],
+    ['ประเภท', report.category],
+    ['สถานที่', report.locationName],
+    ['รายละเอียดปัญหา', report.problem],
+    ['วันที่แจ้ง', report.reportDate || report.createdAt],
+    ['ผู้รับผิดชอบ', report.assignedTo],
+    ['ผลดำเนินการ/หมายเหตุ', report.adminNote],
+    ['วันที่แก้ไขเสร็จ', report.completedAt]
+  ];
+  if (report.geoAddress) fields.push(['พิกัด/แผนที่', '<a href="' + escAttr(report.geoAddress) + '" target="_blank" rel="noopener">เปิดแผนที่</a>']);
+  var bodyHtml = '<dl class="detail-fields">';
+  fields.forEach(function(f) {
+    var val = f[1];
+    if (!val && val !== 0) val = '-';
+    var isHtml = String(val).indexOf('<') >= 0;
+    bodyHtml += '<div class="detail-field"><dt>' + esc(f[0]) + '</dt><dd>' + (isHtml ? val : esc(val)) + '</dd></div>';
+  });
+  bodyHtml += '</dl>';
+  document.getElementById('detailBody').innerHTML = bodyHtml;
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+window.openReportDetail = openReportDetail;
+
+function detailImageBox(label, url) {
+  if (url) return '<div class="detail-image-box"><p>' + esc(label) + '</p><img src="' + escAttr(url) + '" alt="' + escAttr(label) + '" onclick="openLightbox(\'' + escAttr(url) + '\', event)"></div>';
+  return '<div class="detail-image-box empty"><p>' + esc(label) + '</p><span>ยังไม่มีภาพ</span></div>';
+}
+
+function closeDetailModal() {
+  var modal = document.getElementById('detailModal');
+  if (modal) modal.classList.add('hidden');
+}
+window.closeDetailModal = closeDetailModal;
+
+function openLightbox(url, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (!url) return;
+  var lb = document.getElementById('imageLightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'imageLightbox';
+    lb.className = 'lightbox hidden';
+    lb.innerHTML = '<div class="lightbox-backdrop" onclick="closeLightbox()"></div>' +
+      '<div class="lightbox-content">' +
+      '<button class="lightbox-close" onclick="closeLightbox()" aria-label="ปิด">&times;</button>' +
+      '<img id="lightboxImg" src="" alt="ภาพขยาย">' +
+      '</div>';
+    document.body.appendChild(lb);
+  }
+  document.getElementById('lightboxImg').src = url;
+  lb.classList.remove('hidden');
+  requestAnimationFrame(function() { lb.classList.add('show'); });
+}
+window.openLightbox = openLightbox;
+
+function closeLightbox() {
+  var lb = document.getElementById('imageLightbox');
+  if (lb) {
+    lb.classList.remove('show');
+    setTimeout(function() { lb.classList.add('hidden'); }, 250);
+  }
+}
+window.closeLightbox = closeLightbox;
 
 function submitReport(event) {
   event.preventDefault();
@@ -479,7 +571,7 @@ function renderAdminTable() {
       '<td><div class="row-title">' + esc(report.locationName) + '</div><div class="row-sub">' + esc(report.problem) + '</div></td>' +
       '<td><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></td>' +
       '<td>' + esc(report.assignedTo || '-') + '</td>' +
-      '<td class="action-cell"><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button></td>' +
+      '<td class="action-cell"><button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button></td>' +
     '</tr>';
   }).join('');
   if (window.lucide) lucide.createIcons();
@@ -498,8 +590,8 @@ function openEdit(id) {
   form.adminNote.value = report.adminNote || '';
   form.afterImage.value = '';
   document.getElementById('editTitle').textContent = report.id + ' · ' + report.locationName;
-  document.getElementById('editPreview').innerHTML = '<div class="preview-box">' + (report.beforeImageUrl ? '<img src="' + escAttr(report.beforeImageUrl) + '" alt="ภาพก่อนแก้ไข">' : '') + '<p>ก่อนแก้ไข</p></div>' +
-    '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข">' : '') + '<p>หลังแก้ไข</p></div>';
+  document.getElementById('editPreview').innerHTML = '<div class="preview-box">' + (report.beforeImageUrl ? '<img src="' + escAttr(report.beforeImageUrl) + '" alt="ภาพก่อนแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.beforeImageUrl) + '\', event)">' : '') + '<p>ก่อนแก้ไข</p></div>' +
+    '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.afterImageUrl) + '\', event)">' : '') + '<p>หลังแก้ไข</p></div>';
   modal.classList.remove('hidden');
   if (window.lucide) lucide.createIcons();
 }
