@@ -236,10 +236,13 @@ function apiPostWithResponse(action, payload) {
     form.remove();
   });
 }
-function loadBootstrap() {
+function loadBootstrap(isManual) {
+  const manual = isManual === true || (isManual && isManual.type === 'click');
   setBusy(document.getElementById('refreshButton'), true);
+  if (manual) showLoading('กำลังโหลดข้อมูลล่าสุด...');
   serverCall('getBootstrapData')
     .then(function(result) {
+      if (manual) hideLoading();
       if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดข้อมูลไม่สำเร็จ');
       state.settings = result.settings || {};
       state.statuses = result.statuses || [];
@@ -252,8 +255,12 @@ function loadBootstrap() {
       const initial = String(window.__INITIAL_PAGE__ || '').toLowerCase();
       if (initial === 'login' || initial === 'adminpage' || initial === 'admin') showView('adminView');
       if (initial === 'table' || initial === 'track') showView('trackView');
+      if (manual) showSuccessPopup('โหลดข้อมูลล่าสุดเรียบร้อยแล้ว');
     })
-    .catch(showError)
+    .catch(function(err) {
+      if (manual) hideLoading();
+      showError(err);
+    })
     .finally(function() { setBusy(document.getElementById('refreshButton'), false); });
 }
 
@@ -526,8 +533,11 @@ function submitLogin(event) {
       state.adminReports = result.reports || [];
       state.settings = result.settings || state.settings;
       sessionStorage.setItem('fieldReportToken', state.token);
+      const expireTime = Date.now() + 3600000;
+      sessionStorage.setItem('fieldReportTokenExpire', expireTime.toString());
       applySettings();
       renderAdmin(result.stats);
+      startSessionTimer();
       toast('เข้าสู่ระบบสำเร็จ');
       form.reset();
     })
@@ -536,6 +546,7 @@ function submitLogin(event) {
 }
 
 function restoreAdminSession() {
+  if (!checkSessionExpiration()) return;
   serverCall('getAdminReports', state.token)
     .then(function(result) {
       if (!result || !result.ok) throw new Error('session หมดอายุ');
@@ -544,6 +555,7 @@ function restoreAdminSession() {
       state.settings = result.settings || state.settings;
       applySettings();
       renderAdmin(result.stats);
+      startSessionTimer();
     })
     .catch(function() { logoutAdmin(false); });
 }
@@ -578,6 +590,7 @@ function renderAdminTable() {
 }
 
 function openEdit(id) {
+  if (!checkSessionExpiration()) return;
   const report = state.adminReports.find(function(item) { return item.id === id; });
   if (!report) return;
   const modal = document.getElementById('editModal');
@@ -599,6 +612,7 @@ window.openEdit = openEdit;
 
 function submitEdit(event) {
   event.preventDefault();
+  if (!checkSessionExpiration()) return;
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true);
@@ -618,6 +632,7 @@ function submitEdit(event) {
 }
 
 function openSettings() {
+  if (!checkSessionExpiration()) return;
   const form = document.getElementById('settingsForm');
   form.APP_TITLE.value = state.settings.appTitle || '';
   form.ORGANIZATION_NAME.value = state.settings.organizationName || '';
@@ -631,6 +646,7 @@ function openSettings() {
 
 function submitSettings(event) {
   event.preventDefault();
+  if (!checkSessionExpiration()) return;
   const form = event.target;
   const data = Object.fromEntries(new FormData(form).entries());
   const button = form.querySelector('[type="submit"]');
@@ -650,13 +666,48 @@ function submitSettings(event) {
 }
 
 function logoutAdmin(showMessage) {
+  clearTimeout(sessionTimerId);
   state.token = '';
   state.user = null;
   state.adminReports = [];
   sessionStorage.removeItem('fieldReportToken');
+  sessionStorage.removeItem('fieldReportTokenExpire');
   document.getElementById('loginPanel').classList.remove('hidden');
   document.getElementById('adminPanel').classList.add('hidden');
   if (showMessage !== false) toast('ออกจากระบบแล้ว');
+}
+
+let sessionTimerId = null;
+
+function startSessionTimer() {
+  clearTimeout(sessionTimerId);
+  if (!state.token) return;
+  let expire = Number(sessionStorage.getItem('fieldReportTokenExpire') || 0);
+  if (!expire) {
+    expire = Date.now() + 3600000;
+    sessionStorage.setItem('fieldReportTokenExpire', expire.toString());
+  }
+  const remaining = expire - Date.now();
+  if (remaining <= 0) {
+    handleSessionExpired();
+  } else {
+    sessionTimerId = setTimeout(handleSessionExpired, Math.min(remaining, 2147483647));
+  }
+}
+
+function checkSessionExpiration() {
+  const expire = Number(sessionStorage.getItem('fieldReportTokenExpire') || 0);
+  if (state.token && expire && Date.now() >= expire) {
+    handleSessionExpired();
+    return false;
+  }
+  return true;
+}
+
+function handleSessionExpired() {
+  logoutAdmin(false);
+  showSuccessPopup('เซสชันการใช้งานหมดอายุ (ครบ 1 ชั่วโมง)\nกรุณาเข้าสู่ระบบใหม่อีกครั้ง');
+  showView('adminView');
 }
 
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
@@ -747,10 +798,10 @@ function showLoading(message) {
     elapsed.className = 'loading-elapsed';
     overlay.querySelector('.loading-card').appendChild(elapsed);
   }
-  elapsed.textContent = '';
+  elapsed.textContent = 'ผ่านไป 0 วินาที';
   showLoading._timer = setInterval(function() {
     var secs = Math.floor((Date.now() - showLoading._startTime) / 1000);
-    elapsed.textContent = secs > 2 ? 'ผ่านไป ' + secs + ' วินาที' : '';
+    elapsed.textContent = 'ผ่านไป ' + secs + ' วินาที';
   }, 1000);
 }
 
