@@ -131,7 +131,7 @@
               <i data-lucide="bell-ring"></i>
               <div>
                 <h4>แจ้งเตือนอัตโนมัติ</h4>
-                <p>เมื่อมีการส่งเรื่อง ระบบจะบันทึกลง Google Sheet และส่งข้อความเข้า Telegram อัตโนมัติ</p>
+                <p>เมื่อมีการส่งเรื่อง ระบบจะบันทึกลง Google Sheet และส่งข้อความเข้า Telegram หากตั้งค่า Token และ Chat ID แล้ว</p>
               </div>
             </div>
             <div class="latest-list" id="latestList"></div>
@@ -163,7 +163,7 @@
           <div class="auth-copy">
             <p class="eyebrow">Admin Console</p>
             <h3>เข้าสู่ระบบเพื่อสรุปผลและบันทึกการแก้ไข</h3>
-            <p>ผู้ใช้งานต้องเข้าสู่ระบบก่อน จึงจะสามารถสรุปผลการตรวจพื้นที่ บันทึกการแก้ไข และบันทึกข้อมูลการดำเนินงานที่มีการปรับปรุงได้ เพื่อให้ข้อมูลมีความถูกต้อง สามารถตรวจสอบย้อนหลังได้ และระบุผู้ดำเนินการแก้ไขได้อย่างชัดเจน</p>
+
           </div>
           <form id="loginForm" class="stacked-form narrow-form">
             <label>ชื่อผู้ใช้
@@ -292,6 +292,9 @@
         <label>Drive Folder ID สำหรับเก็บรูป
           <input type="text" name="DRIVE_FOLDER_ID">
         </label>
+        <label>ลิงก์หน้าเว็บหลัก (GitHub Pages URL)
+          <input type="url" name="WEB_APP_URL" placeholder="https://username.github.io/project/">
+        </label>
         <label>แสดงรายการสาธารณะ
           <select name="PUBLIC_LIST_ENABLED">
             <option value="TRUE">TRUE</option>
@@ -309,5 +312,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-

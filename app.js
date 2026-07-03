@@ -9,6 +9,7 @@ const ACTION_MAP = {
   saveSettings: 'saveSettings'
 };
 window.__INITIAL_PAGE__ = new URLSearchParams(window.location.search).get('page') || '';
+window.__INITIAL_EDIT__ = new URLSearchParams(window.location.search).get('edit') || '';
 const state = {
   token: sessionStorage.getItem('fieldReportToken') || '',
   user: null,
@@ -256,8 +257,9 @@ function loadBootstrap(isManual) {
       renderAll(result.stats || {});
       if (state.token) restoreAdminSession();
       const initial = String(window.__INITIAL_PAGE__ || '').toLowerCase();
+      const initialEdit = String(window.__INITIAL_EDIT__ || '');
       const savedView = sessionStorage.getItem('activeViewId');
-      if (initial === 'login' || initial === 'adminpage' || initial === 'admin') {
+      if (initialEdit || initial === 'login' || initial === 'adminpage' || initial === 'admin') {
         showView('adminView');
       } else if (initial === 'table' || initial === 'track') {
         showView('trackView');
@@ -550,6 +552,19 @@ function submitLogin(event) {
       startSessionTimer();
       toast('เข้าสู่ระบบสำเร็จ');
       form.reset();
+      const editId = window.__INITIAL_EDIT__;
+      if (editId) {
+        window.__INITIAL_EDIT__ = '';
+        if (window.history && window.history.replaceState) {
+          const url = new URL(window.location.href);
+          if (url.searchParams.has('edit')) {
+            url.searchParams.delete('edit');
+            window.history.replaceState({}, document.title, url.toString());
+          }
+        }
+        showView('adminView');
+        setTimeout(function() { openEdit(editId); }, 200);
+      }
     })
     .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
@@ -568,6 +583,19 @@ function restoreAdminSession() {
       startSessionTimer();
       const savedView = sessionStorage.getItem('activeViewId');
       if (savedView === 'adminView') showView('adminView');
+      const editId = window.__INITIAL_EDIT__;
+      if (editId) {
+        window.__INITIAL_EDIT__ = '';
+        if (window.history && window.history.replaceState) {
+          const url = new URL(window.location.href);
+          if (url.searchParams.has('edit')) {
+            url.searchParams.delete('edit');
+            window.history.replaceState({}, document.title, url.toString());
+          }
+        }
+        showView('adminView');
+        setTimeout(function() { openEdit(editId); }, 200);
+      }
     })
     .catch(function() { logoutAdmin(false); });
 }
@@ -604,7 +632,17 @@ function renderAdminTable() {
 function openEdit(id) {
   if (!checkSessionExpiration()) return;
   const report = state.adminReports.find(function(item) { return item.id === id; });
-  if (!report) return;
+  if (!report) {
+    toast('ไม่พบข้อมูลเรื่องแจ้งรหัส ' + id);
+    return;
+  }
+  if (window.history && window.history.replaceState) {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('edit')) {
+      url.searchParams.delete('edit');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+  }
   const modal = document.getElementById('editModal');
   const form = document.getElementById('editForm');
   form.token.value = state.token;
@@ -652,6 +690,7 @@ function openSettings() {
   form.TELEGRAM_CHAT_ID.value = state.settings.telegramChatId || '';
   form.MAP_URL.value = state.settings.mapUrl || '';
   form.DRIVE_FOLDER_ID.value = state.settings.driveFolderId || '';
+  if (form.WEB_APP_URL) form.WEB_APP_URL.value = state.settings.webAppUrl || '';
   form.PUBLIC_LIST_ENABLED.value = state.settings.publicListEnabled === false ? 'FALSE' : 'TRUE';
   document.getElementById('settingsModal').classList.remove('hidden');
 }
