@@ -44,12 +44,15 @@ async function serverCall(name) {
   if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
     return apiJsonp(action, payload);
   }
-  // For createReport / updateReport: try iframe postMessage first, fall back to no-cors + short delay
+  // For createReport / updateReport: try iframe postMessage first, fall back to no-cors + re-fetch
+  updateLoadingMessage('กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...');
   var result = await apiPostWithResponse(action, payload);
   if (result && result.ok !== undefined) return result;
   // Fallback: fire-and-forget POST then re-fetch
   await apiPostNoCors(action, payload);
-  await delay(1500);
+  updateLoadingMessage('กำลังรอเซิร์ฟเวอร์ประมวลผล...');
+  await delay(2000);
+  updateLoadingMessage('กำลังโหลดข้อมูลล่าสุด...');
   if (action === 'createReport') {
     const fresh = await apiJsonp('bootstrap', {});
     return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', reports: fresh.reports || [], stats: fresh.stats || {} };
@@ -83,6 +86,7 @@ async function formToPayload(form) {
   for (const [key, value] of entries) {
     if (value instanceof File) {
       if (value.size > 0) {
+        updateLoadingMessage('กำลังบีบอัดรูปภาพ...');
         payload[key] = await fileToPayload(value);
       }
     } else {
@@ -92,12 +96,45 @@ async function formToPayload(form) {
   return payload;
 }
 
+function compressImage(file, maxWidth, quality) {
+  maxWidth = maxWidth || 1200;
+  quality = quality || 0.7;
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('อ่านไฟล์รูปภาพไม่สำเร็จ')); };
+    reader.onload = function() {
+      var img = new Image();
+      img.onerror = function() { reject(new Error('ไม่สามารถอ่านรูปภาพได้')); };
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({
+          name: file.name.replace(/\.[^.]+$/, '.jpg'),
+          type: 'image/jpeg',
+          size: Math.round(dataUrl.length * 0.75),
+          data: dataUrl
+        });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function fileToPayload(file) {
   if (file.size > 10 * 1024 * 1024) {
     return Promise.reject(new Error('ขนาดรูปภาพต้องไม่เกิน 10 MB'));
   }
+  if (file.type && file.type.indexOf('image/') === 0) {
+    return compressImage(file, 1200, 0.7);
+  }
   return new Promise(function(resolve, reject) {
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function() {
       resolve({ name: file.name, type: file.type, size: file.size, data: reader.result });
     };
@@ -345,17 +382,19 @@ function submitReport(event) {
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true);
+  showLoading('กำลังเตรียมข้อมูล...');
   serverCall('createReport', form)
     .then(function(result) {
+      hideLoading();
       if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'ส่งเรื่องไม่สำเร็จ');
       state.reports = result.reports || state.reports;
       renderAll(result.stats || buildLocalStats(state.reports));
       form.reset();
       setDefaultDate();
-      toast(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย เลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย ระบบกำลังอัปเดตรายการ');
+      showSuccessPopup(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย\nเลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย');
       showView('trackView');
     })
-    .catch(showError)
+    .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
 }
 
@@ -385,8 +424,10 @@ function submitLogin(event) {
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true);
+  showLoading('กำลังตรวจสอบข้อมูลผู้ใช้...');
   serverCall('login', Object.fromEntries(new FormData(form).entries()))
     .then(function(result) {
+      hideLoading();
       if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'เข้าสู่ระบบไม่สำเร็จ');
       state.token = result.token;
       state.user = result.user;
@@ -398,7 +439,7 @@ function submitLogin(event) {
       toast('เข้าสู่ระบบสำเร็จ');
       form.reset();
     })
-    .catch(showError)
+    .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
 }
 
@@ -469,16 +510,18 @@ function submitEdit(event) {
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true);
+  showLoading('กำลังเตรียมข้อมูล...');
   serverCall('updateReport', form)
     .then(function(result) {
+      hideLoading();
       if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'บันทึกไม่สำเร็จ');
       state.adminReports = result.reports || state.adminReports;
       state.reports = result.publicReports || state.reports;
       renderAll(result.stats || buildLocalStats(state.adminReports));
       closeEditModal();
-      toast(result.message || 'บันทึกเรียบร้อย');
+      showSuccessPopup(result.message || 'บันทึกเรียบร้อย');
     })
-    .catch(showError)
+    .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
 }
 
@@ -500,15 +543,17 @@ function submitSettings(event) {
   const data = Object.fromEntries(new FormData(form).entries());
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true);
+  showLoading('กำลังบันทึกการตั้งค่า...');
   serverCall('saveSettings', { token: state.token, settings: data })
     .then(function(result) {
+      hideLoading();
       if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'บันทึกตั้งค่าไม่สำเร็จ');
       state.settings = result.settings || state.settings;
       applySettings();
       closeSettings();
-      toast(result.message || 'บันทึกการตั้งค่าเรียบร้อย');
+      showSuccessPopup(result.message || 'บันทึกการตั้งค่าเรียบร้อย');
     })
-    .catch(showError)
+    .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
 }
 
@@ -578,11 +623,82 @@ function toast(message, isError) {
   box.classList.toggle('error', !!isError);
   box.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(function() { box.classList.remove('show'); }, 3600);
+  toast.timer = setTimeout(function() { box.classList.remove('show'); }, isError ? 5000 : 3600);
 }
 
 function showError(error) {
   toast(error && error.message ? error.message : String(error || 'เกิดข้อผิดพลาด'), true);
+}
+
+// --- Loading Overlay ---
+function showLoading(message) {
+  var overlay = document.getElementById('loadingOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = '<div class="loading-card">' +
+      '<div class="loading-spinner"></div>' +
+      '<p class="loading-message">กำลังดำเนินการ...</p>' +
+      '<p class="loading-hint">กรุณารอสักครู่ อย่าปิดหน้านี้</p>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.querySelector('.loading-message').textContent = message || 'กำลังดำเนินการ...';
+  overlay.classList.add('show');
+  overlay.classList.remove('hidden');
+  showLoading._startTime = Date.now();
+  clearInterval(showLoading._timer);
+  var elapsed = overlay.querySelector('.loading-elapsed');
+  if (!elapsed) {
+    elapsed = document.createElement('p');
+    elapsed.className = 'loading-elapsed';
+    overlay.querySelector('.loading-card').appendChild(elapsed);
+  }
+  elapsed.textContent = '';
+  showLoading._timer = setInterval(function() {
+    var secs = Math.floor((Date.now() - showLoading._startTime) / 1000);
+    elapsed.textContent = secs > 2 ? 'ผ่านไป ' + secs + ' วินาที' : '';
+  }, 1000);
+}
+
+function updateLoadingMessage(message) {
+  var overlay = document.getElementById('loadingOverlay');
+  if (overlay && overlay.classList.contains('show')) {
+    overlay.querySelector('.loading-message').textContent = message;
+  }
+}
+
+function hideLoading() {
+  clearInterval(showLoading._timer);
+  var overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(function() { overlay.classList.add('hidden'); }, 300);
+  }
+}
+
+function showSuccessPopup(message) {
+  var overlay = document.getElementById('successOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'successOverlay';
+    overlay.className = 'success-overlay hidden';
+    overlay.innerHTML = '<div class="success-card">' +
+      '<div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>' +
+      '<p class="success-message">สำเร็จ</p>' +
+      '</div>';
+    overlay.addEventListener('click', function() { overlay.classList.add('hidden'); overlay.classList.remove('show'); });
+    document.body.appendChild(overlay);
+  }
+  overlay.querySelector('.success-message').textContent = message.replace(/\n/g, ' ');
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(function() { overlay.classList.add('show'); });
+  clearTimeout(showSuccessPopup._timer);
+  showSuccessPopup._timer = setTimeout(function() {
+    overlay.classList.remove('show');
+    setTimeout(function() { overlay.classList.add('hidden'); }, 300);
+  }, 2800);
 }
 
 function setText(id, value) { document.getElementById(id).textContent = value; }
@@ -600,7 +716,3 @@ function esc(value) {
 
 function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
-
-
-
-
