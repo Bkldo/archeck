@@ -48,7 +48,12 @@ async function serverCall(name) {
   // For createReport / updateReport: try iframe postMessage first, fall back to no-cors + re-fetch
   updateLoadingMessage('กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...');
   var result = await apiPostWithResponse(action, payload);
-  if (result && result.ok !== undefined) return result;
+  if (result && result.ok !== undefined) {
+    if (action === 'updateReport') {
+      result.publicReports = result.reports || [];
+    }
+    return result;
+  }
   // Fallback: fire-and-forget POST then re-fetch
   await apiPostNoCors(action, payload);
   updateLoadingMessage('กำลังรอเซิร์ฟเวอร์ประมวลผล...');
@@ -101,8 +106,8 @@ async function formToPayload(form) {
 }
 
 function compressImage(file, maxWidth, quality) {
-  maxWidth = maxWidth || 1200;
-  quality = quality || 0.7;
+  maxWidth = maxWidth || 800;
+  quality = quality || 0.6;
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
     reader.onerror = function() { reject(new Error('อ่านไฟล์รูปภาพไม่สำเร็จ')); };
@@ -135,7 +140,7 @@ function fileToPayload(file) {
     return Promise.reject(new Error('ขนาดรูปภาพต้องไม่เกิน 10 MB'));
   }
   if (file.type && file.type.indexOf('image/') === 0) {
-    return compressImage(file, 1200, 0.7);
+    return compressImage(file, 800, 0.6);
   }
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
@@ -204,7 +209,7 @@ function apiPostWithResponse(action, payload) {
     var resolved = false;
     var timer = setTimeout(function() {
       if (!resolved) { resolved = true; cleanup(); resolve(null); }
-    }, 25000);
+    }, 40000);
     function onMessage(event) {
       if (resolved) return;
       var data = event.data;
@@ -913,7 +918,3 @@ function esc(value) {
 
 function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
-
-
-
-
