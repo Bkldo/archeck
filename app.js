@@ -45,23 +45,13 @@ async function serverCall(name) {
   if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
     return apiJsonp(action, payload);
   }
-  // For createReport / updateReport: try iframe postMessage first, fall back to no-cors + re-fetch
-  updateLoadingMessage('กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...');
-  var result = await apiPostWithResponse(action, payload);
-  if (result && result.ok !== undefined) {
-    if (action === 'updateReport') {
-      result.publicReports = result.reports || [];
-    }
-    return result;
-  }
-  // Fallback: fire-and-forget POST then re-fetch
+  // For createReport / updateReport: use fast no-cors POST, then fetch fresh data via JSONP
+  updateLoadingMessage('กำลังบันทึกข้อมูล...');
   await apiPostNoCors(action, payload);
-  updateLoadingMessage('กำลังรอเซิร์ฟเวอร์ประมวลผล...');
-  await delay(2000);
-  updateLoadingMessage('กำลังโหลดข้อมูลล่าสุด...');
+  updateLoadingMessage('กำลังอัปเดตตารางข้อมูล...');
   if (action === 'createReport') {
     const fresh = await apiJsonp('bootstrap', {});
-    return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', reports: fresh.reports || [], stats: fresh.stats || {} };
+    return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', report: fresh && fresh.reports && fresh.reports[0] ? fresh.reports[0] : null, reports: fresh.reports || [], stats: fresh.stats || {} };
   }
   if (action === 'updateReport') {
     const [admin, publicData] = await Promise.all([
@@ -71,9 +61,10 @@ async function serverCall(name) {
     return {
       ok: admin && admin.ok !== false,
       message: 'บันทึกผลแก้ไขเรียบร้อย',
-      reports: admin.reports || [],
-      publicReports: publicData.reports || [],
-      stats: admin.stats || {}
+      report: admin && admin.reports ? admin.reports.find(function(r) { return r.id === payload.reportId; }) : null,
+      reports: admin && admin.reports ? admin.reports : [],
+      publicReports: publicData && publicData.reports ? publicData.reports : [],
+      stats: admin && admin.stats ? admin.stats : {}
     };
   }
   return { ok: true, message: 'ส่งข้อมูลเรียบร้อย' };
@@ -200,51 +191,6 @@ function apiPostNoCors(action, payload) {
   });
 }
 
-function apiPostWithResponse(action, payload) {
-  return new Promise(function(resolve) {
-    var callbackId = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-    var iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.name = 'postFrame_' + callbackId;
-    var resolved = false;
-    var timer = setTimeout(function() {
-      if (!resolved) { resolved = true; cleanup(); resolve(null); }
-    }, 40000);
-    function onMessage(event) {
-      if (resolved) return;
-      var data = event.data;
-      if (data && data.source === 'field-report-api' && data.callbackId === callbackId) {
-        resolved = true;
-        cleanup();
-        resolve(data.payload || null);
-      }
-    }
-    function cleanup() {
-      clearTimeout(timer);
-      window.removeEventListener('message', onMessage);
-      setTimeout(function() { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 200);
-    }
-    window.addEventListener('message', onMessage);
-    document.body.appendChild(iframe);
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = SCRIPT_URL;
-    form.target = iframe.name;
-    function addField(name, value) {
-      var input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    }
-    addField('action', action);
-    addField('callbackId', callbackId);
-    addField('payload', JSON.stringify(payload == null ? {} : payload));
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-  });
-}
 function loadBootstrap(isManual) {
   const manual = isManual === true || (isManual && isManual.type === 'click');
   setBusy(document.getElementById('refreshButton'), true);
