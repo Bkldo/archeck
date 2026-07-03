@@ -45,9 +45,9 @@ async function serverCall(name) {
   if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
     return apiJsonp(action, payload);
   }
-  // For createReport / updateReport: use fast no-cors POST, then fetch fresh data via JSONP
+  // For createReport / updateReport: use reliable form POST to hidden iframe, then fetch fresh data via JSONP
   updateLoadingMessage('กำลังบันทึกข้อมูล...');
-  await apiPostNoCors(action, payload);
+  await apiPostForm(action, payload);
   updateLoadingMessage('กำลังอัปเดตตารางข้อมูล...');
   if (action === 'createReport') {
     const fresh = await apiJsonp('bootstrap', {});
@@ -181,13 +181,49 @@ function delay(ms) {
   return new Promise(function(resolve) { setTimeout(resolve, ms); });
 }
 
-function apiPostNoCors(action, payload) {
-  const body = new URLSearchParams();
-  body.set('payload', JSON.stringify(payload == null ? {} : payload));
-  return fetch(SCRIPT_URL + (SCRIPT_URL.indexOf('?') >= 0 ? '&' : '?') + new URLSearchParams({ action: action }).toString(), {
-    method: 'POST',
-    mode: 'no-cors',
-    body: body.toString()
+function apiPostForm(action, payload) {
+  return new Promise(function(resolve) {
+    var callbackId = 'cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    var iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'postFrame_' + callbackId;
+    var resolved = false;
+    var timer = setTimeout(function() {
+      if (!resolved) { resolved = true; cleanup(); resolve(null); }
+    }, 3500);
+    function onMessage(event) {
+      if (resolved) return;
+      var data = event.data;
+      if (data && data.source === 'field-report-api' && data.callbackId === callbackId) {
+        resolved = true;
+        cleanup();
+        resolve(data.payload || null);
+      }
+    }
+    function cleanup() {
+      clearTimeout(timer);
+      window.removeEventListener('message', onMessage);
+      setTimeout(function() { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 200);
+    }
+    window.addEventListener('message', onMessage);
+    document.body.appendChild(iframe);
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = iframe.name;
+    function addField(name, value) {
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    }
+    addField('action', action);
+    addField('callbackId', callbackId);
+    addField('payload', JSON.stringify(payload == null ? {} : payload));
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
   });
 }
 
@@ -604,6 +640,8 @@ function openEdit(id) {
   form.adminNote.value = report.adminNote || '';
   form.afterImage.value = '';
   document.getElementById('editTitle').textContent = report.id + ' · ' + report.locationName;
+  var problemEl = document.getElementById('editProblem');
+  if (problemEl) problemEl.textContent = 'ปัญหา: ' + (report.problem || '-');
   document.getElementById('editPreview').innerHTML = '<div class="preview-box">' + (report.beforeImageUrl ? '<img src="' + escAttr(report.beforeImageUrl) + '" alt="ภาพก่อนแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.beforeImageUrl) + '\', event)">' : '') + '<p>ก่อนแก้ไข</p></div>' +
     '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.afterImageUrl) + '\', event)">' : '') + '<p>หลังแก้ไข</p></div>';
   modal.classList.remove('hidden');
