@@ -1386,9 +1386,9 @@ function renderStatsView() {
   }
 
   const total = reports.length;
-  let pending = 0;
-  let completed = 0;
-  let forwarded = 0;
+  let receivedCount = 0;
+  let inProgressCount = 0;
+  let completedCount = 0;
   
   const byDept = {};
   const byRespDept = {};
@@ -1402,9 +1402,9 @@ function renderStatsView() {
     const resp = r.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ';
     const cat = r.category || 'ทั่วไป';
     
-    if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') pending++;
-    if (status === 'แก้ไขเสร็จสิ้น') completed++;
-    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') forwarded++;
+    if (status === 'รับเรื่องแล้ว') receivedCount++;
+    if (status === 'กำลังดำเนินการ') inProgressCount++;
+    if (status === 'แก้ไขเสร็จสิ้น' || status === 'ส่งต่อ/ประสานหน่วยงานอื่น') completedCount++;
     
     if (!byDept[dept]) byDept[dept] = { total: 0, pending: 0, completed: 0, forwarded: 0 };
     byDept[dept].total++;
@@ -1428,9 +1428,9 @@ function renderStatsView() {
   });
   
   setText('statsTotalCount', total);
-  setText('statsPendingCount', pending);
-  setText('statsCompletedCount', completed);
-  setText('statsForwardedCount', forwarded);
+  setText('statsReceivedCount', receivedCount);
+  setText('statsInProgressCount', inProgressCount);
+  setText('statsCompletedCount', completedCount);
 
   function renderRateTable(bodyId, map, labelKey) {
     const el = document.getElementById(bodyId);
