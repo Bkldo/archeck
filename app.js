@@ -549,7 +549,7 @@ function createPopupContent(report) {
     '</div>' +
     '<h4 style="margin: 0 0 6px 0; font-size: 15px; color: #0f172a; line-height: 1.3;">' + esc(report.problem || '-') + '</h4>' +
     '<p style="margin: 0 0 4px 0; font-size: 13px; color: #334155;">📍 <strong>สถานที่:</strong> ' + esc(report.locationName || '-') + '</p>' +
-    '<p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;">📅 <strong>วันที่:</strong> ' + esc(formatDate(report.reportDate || report.createdAt)) + '</p>' +
+    '<p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;">📅 <strong>วันที่:</strong> ' + esc(report.reportDate || report.createdAt || '-') + '</p>' +
     imgHtml +
     '<div style="display: flex; gap: 6px; margin-top: 10px;">' +
       '<button type="button" class="primary-button" style="padding: 6px 10px; font-size: 12px; flex: 1; justify-content: center;" onclick="window.openReportDetail(\'' + report.id + '\');">ดูรายละเอียด</button>';
