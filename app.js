@@ -373,9 +373,9 @@ function renderAll(stats) {
 
 function renderStats(stats) {
   setText('statTotal', stats.total || 0);
+  setText('statReceived', stats.received || 0);
   setText('statProgress', stats.inProgress || 0);
-  setText('statDone', stats.completed || 0);
-  setText('statUrgent', stats.urgent || 0);
+  setText('statDone', (stats.completed || 0) + (stats.forwarded || 0));
   setText('adminTotal', stats.total || 0);
   setText('adminReceived', stats.received || 0);
   setText('adminProgress', stats.inProgress || 0);
