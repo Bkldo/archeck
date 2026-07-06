@@ -155,14 +155,62 @@ button:disabled { opacity: .64; cursor: wait; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .metric-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
 .metric {
-  min-height: 92px;
-  padding: 14px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
+  border-radius: 8px;
+  border-top-width: 4px;
+  background: #fff;
+  min-height: 100px;
 }
-.metric span { display: block; font-size: 30px; font-weight: 800; color: var(--brand-dark); line-height: 1; }
-.metric p { margin: 8px 0 0; color: var(--muted); }
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.metric-content p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.metric-content span {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+.metric-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+.metric-icon svg { width: 24px; height: 24px; stroke-width: 2.5px; }
+
+.metric.total { border-top-color: #64748b; background: #f8fafc; }
+.metric.total .metric-content span { color: #0f172a; }
+.metric.total .metric-icon { color: #1e293b; border: 1px solid #e2e8f0; }
+
+.metric.received { border-top-color: #3b82f6; background: #eff6ff; }
+.metric.received .metric-content p { color: #2563eb; }
+.metric.received .metric-content span { color: #1e40af; }
+.metric.received .metric-icon { color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+.metric.progress { border-top-color: #f59e0b; background: #fffbeb; }
+.metric.progress .metric-content p { color: #b45309; }
+.metric.progress .metric-content span { color: #92400e; }
+.metric.progress .metric-icon { color: #b45309; border: 1px solid #fde68a; }
+
+.metric.done { border-top-color: #10b981; background: #ecfdf5; }
+.metric.done .metric-content p { color: #047857; }
+.metric.done .metric-content span { color: #064e3b; }
+.metric.done .metric-icon { color: #047857; border: 1px solid #a7f3d0; }
 .notice-box {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr);

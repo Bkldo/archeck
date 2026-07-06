@@ -137,10 +137,22 @@
           <aside class="panel summary-panel">
             <p class="eyebrow">ภาพรวมล่าสุด</p>
             <div class="metric-grid compact">
-              <div class="metric"><span id="statTotal">0</span><p>📌 ทั้งหมด</p></div>
-              <div class="metric"><span id="statReceived">0</span><p>📩 รับเรื่อง</p></div>
-              <div class="metric"><span id="statProgress">0</span><p>⏳ กำลังทำ</p></div>
-              <div class="metric"><span id="statDone">0</span><p>✅ เสร็จสิ้น</p></div>
+              <div class="metric total">
+                <div class="metric-content"><p>ทั้งหมด</p><span id="statTotal">0</span></div>
+                <div class="metric-icon"><i data-lucide="package"></i></div>
+              </div>
+              <div class="metric received">
+                <div class="metric-content"><p>รับเรื่องแล้ว</p><span id="statReceived">0</span></div>
+                <div class="metric-icon"><i data-lucide="inbox"></i></div>
+              </div>
+              <div class="metric progress">
+                <div class="metric-content"><p>กำลังดำเนินการ</p><span id="statProgress">0</span></div>
+                <div class="metric-icon"><i data-lucide="loader"></i></div>
+              </div>
+              <div class="metric done">
+                <div class="metric-content"><p>เสร็จสิ้น</p><span id="statDone">0</span></div>
+                <div class="metric-icon"><i data-lucide="check-circle-2"></i></div>
+              </div>
             </div>
             <div class="notice-box">
               <i data-lucide="bell-ring"></i>
@@ -205,10 +217,22 @@
           </div>
 
           <div class="metric-grid admin-metrics">
-            <div class="metric"><span id="adminTotal">0</span><p>📌 ทั้งหมด</p></div>
-            <div class="metric"><span id="adminReceived">0</span><p>📩 รับเรื่องแล้ว</p></div>
-            <div class="metric"><span id="adminProgress">0</span><p>⏳ กำลังดำเนินการ</p></div>
-            <div class="metric"><span id="adminCompleted">0</span><p>✅ เสร็จสิ้น</p></div>
+            <div class="metric total">
+              <div class="metric-content"><p>ทั้งหมด</p><span id="adminTotal">0</span></div>
+              <div class="metric-icon"><i data-lucide="package"></i></div>
+            </div>
+            <div class="metric received">
+              <div class="metric-content"><p>รับเรื่องแล้ว</p><span id="adminReceived">0</span></div>
+              <div class="metric-icon"><i data-lucide="inbox"></i></div>
+            </div>
+            <div class="metric progress">
+              <div class="metric-content"><p>กำลังดำเนินการ</p><span id="adminProgress">0</span></div>
+              <div class="metric-icon"><i data-lucide="loader"></i></div>
+            </div>
+            <div class="metric done">
+              <div class="metric-content"><p>เสร็จสิ้น</p><span id="adminCompleted">0</span></div>
+              <div class="metric-icon"><i data-lucide="check-circle-2"></i></div>
+            </div>
           </div>
 
           <section class="panel admin-table-panel">
@@ -260,21 +284,21 @@
           </div>
 
           <div class="metric-grid" style="margin-bottom: 24px;">
-            <div class="metric" style="border-left: 4px solid #3b82f6;">
-              <span id="statsTotalCount">0</span>
-              <p>📌 เรื่องทั้งหมด</p>
+            <div class="metric total">
+              <div class="metric-content"><p>เรื่องทั้งหมด</p><span id="statsTotalCount">0</span></div>
+              <div class="metric-icon"><i data-lucide="package"></i></div>
             </div>
-            <div class="metric" style="border-left: 4px solid #f59e0b;">
-              <span id="statsReceivedCount">0</span>
-              <p>📩 รับเรื่อง</p>
+            <div class="metric received">
+              <div class="metric-content"><p>รับเรื่องแล้ว</p><span id="statsReceivedCount">0</span></div>
+              <div class="metric-icon"><i data-lucide="inbox"></i></div>
             </div>
-            <div class="metric" style="border-left: 4px solid #3b82f6;">
-              <span id="statsInProgressCount">0</span>
-              <p>⏳ กำลังทำ</p>
+            <div class="metric progress">
+              <div class="metric-content"><p>กำลังดำเนินการ</p><span id="statsInProgressCount">0</span></div>
+              <div class="metric-icon"><i data-lucide="loader"></i></div>
             </div>
-            <div class="metric" style="border-left: 4px solid #10b981;">
-              <span id="statsCompletedCount">0</span>
-              <p>✅ เสร็จสิ้น</p>
+            <div class="metric done">
+              <div class="metric-content"><p>เสร็จสิ้น</p><span id="statsCompletedCount">0</span></div>
+              <div class="metric-icon"><i data-lucide="check-circle-2"></i></div>
             </div>
           </div>
 
