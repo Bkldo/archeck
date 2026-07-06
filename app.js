@@ -1443,7 +1443,7 @@ function renderStatsView() {
     el.innerHTML = keys.map(function(k) {
       const d = map[k];
       const pVal = d.pending !== undefined ? d.pending : d.inProgress;
-      const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
+      const rate = d.total > 0 ? Math.round(((d.completed + (d.forwarded || 0)) / d.total) * 100) : 0;
       let rateColor = '#059669';
       if (rate < 50) rateColor = '#d97706';
       if (rate === 0 && d.total > 0) rateColor = '#ef4444';
@@ -1470,7 +1470,7 @@ function renderStatsView() {
       respBody.innerHTML = respKeys.map(function(k) {
         const r = byResp[k];
         let statusBadge = '<span class="status-pill received" style="font-size:11px;">รับเรื่อง/รอดำเนินการ</span>';
-        if (r.completed === r.total && r.total > 0) statusBadge = '<span class="status-pill done" style="font-size:11px;">เสร็จสิ้นทั้งหมด</span>';
+        if ((r.completed + (r.forwarded || 0)) === r.total && r.total > 0) statusBadge = '<span class="status-pill done" style="font-size:11px;">เสร็จสิ้นทั้งหมด</span>';
         else if (r.inProgress > 0) statusBadge = '<span class="status-pill progress" style="font-size:11px;">กำลังดำเนินการ</span>';
         else if (r.forwarded > 0) statusBadge = '<span class="status-pill forwarded" style="font-size:11px;">ประสานงานต่อ</span>';
         
