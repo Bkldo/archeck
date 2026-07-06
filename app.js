@@ -1270,8 +1270,100 @@ function esc(value) {
 function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
+function getReportMonthKey(r) {
+  const raw = r.createdAt || r.reportDate || '';
+  if (!raw) return null;
+  // Support common date formats: "2025/07/06 12:34" or "6/7/2025 12:34" or ISO
+  let d = new Date(raw);
+  if (isNaN(d.getTime())) {
+    // Try DD/MM/YYYY or DD/M/YYYY
+    const parts = raw.split(/[\/\-\s]/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const mon = parseInt(parts[1], 10);
+      const yr  = parseInt(parts[2], 10);
+      if (!isNaN(day) && !isNaN(mon) && !isNaN(yr)) {
+        d = new Date(yr < 100 ? 2000 + yr : yr, mon - 1, day);
+      }
+    }
+  }
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  return y + '-' + String(m).padStart(2, '0');
+}
+
+const THAI_MONTHS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function monthKeyToLabel(key) {
+  if (!key || key === 'all') return 'ทุกช่วงเวลา';
+  const parts = key.split('-');
+  const yr = parseInt(parts[0], 10);
+  const mon = parseInt(parts[1], 10);
+  return THAI_MONTHS[mon] + ' ' + (yr + 543);
+}
+
+function populateStatsMonthDropdown(reports) {
+  const sel = document.getElementById('statsMonthSelect');
+  if (!sel) return;
+  const keysSet = {};
+  reports.forEach(function(r) {
+    const k = getReportMonthKey(r);
+    if (k) keysSet[k] = true;
+  });
+  const keys = Object.keys(keysSet).sort().reverse();
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="all">ทุกช่วงเวลา</option>' +
+    keys.map(function(k) {
+      return '<option value="' + k + '">' + monthKeyToLabel(k) + '</option>';
+    }).join('');
+  // Restore selection if still valid
+  if (currentVal && currentVal !== 'all' && keysSet[currentVal]) {
+    sel.value = currentVal;
+  } else {
+    sel.value = 'all';
+  }
+}
+
+function applyStatsFilter() {
+  renderStatsView();
+}
+
+function clearStatsFilter() {
+  const sel = document.getElementById('statsMonthSelect');
+  if (sel) sel.value = 'all';
+  renderStatsView();
+}
+window.applyStatsFilter = applyStatsFilter;
+window.clearStatsFilter = clearStatsFilter;
+
 function renderStatsView() {
-  const reports = state.adminReports.length ? state.adminReports : (state.reports.length ? state.reports : []);
+  const allReports = state.adminReports.length ? state.adminReports : (state.reports.length ? state.reports : []);
+
+  // Populate dropdown (always from full dataset)
+  populateStatsMonthDropdown(allReports);
+
+  // Determine filter
+  const sel = document.getElementById('statsMonthSelect');
+  const filterKey = sel ? sel.value : 'all';
+
+  // Filter reports
+  const reports = filterKey === 'all'
+    ? allReports
+    : allReports.filter(function(r) { return getReportMonthKey(r) === filterKey; });
+
+  // Update filter UI
+  const labelEl = document.getElementById('statsFilterLabel');
+  const clearBtn = document.getElementById('statsClearFilterBtn');
+  if (labelEl) {
+    labelEl.textContent = filterKey === 'all'
+      ? 'แสดงข้อมูลทั้งหมด ' + allReports.length + ' รายการ'
+      : 'กรองเดือน: ' + monthKeyToLabel(filterKey) + ' (' + reports.length + ' รายการ)';
+  }
+  if (clearBtn) {
+    clearBtn.style.display = filterKey === 'all' ? 'none' : '';
+  }
+
   const total = reports.length;
   let pending = 0;
   let completed = 0;
@@ -1318,60 +1410,41 @@ function renderStatsView() {
   setText('statsPendingCount', pending);
   setText('statsCompletedCount', completed);
   setText('statsForwardedCount', forwarded);
-  
-  const deptBody = document.getElementById('statsByDepartmentBody');
-  if (deptBody) {
-    const deptKeys = Object.keys(byDept).sort(function(a, b) { return byDept[b].total - byDept[a].total; });
-    if (deptKeys.length === 0) {
-      deptBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
-    } else {
-      deptBody.innerHTML = deptKeys.map(function(k) {
-        const d = byDept[k];
-        const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
-        let rateColor = '#059669';
-        if (rate < 50) rateColor = '#d97706';
-        if (rate === 0 && d.total > 0) rateColor = '#ef4444';
-        return '<tr>' +
-          '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
-          '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #d97706;">' + d.pending + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
-          '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
-          '</tr>';
-      }).join('');
+
+  function renderRateTable(bodyId, map, labelKey) {
+    const el = document.getElementById(bodyId);
+    if (!el) return;
+    const keys = Object.keys(map).sort(function(a, b) { return map[b].total - map[a].total; });
+    if (keys.length === 0) {
+      el.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
+      return;
     }
+    el.innerHTML = keys.map(function(k) {
+      const d = map[k];
+      const pVal = d.pending !== undefined ? d.pending : d.inProgress;
+      const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
+      let rateColor = '#059669';
+      if (rate < 50) rateColor = '#d97706';
+      if (rate === 0 && d.total > 0) rateColor = '#ef4444';
+      return '<tr>' +
+        '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
+        '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
+        '<td style="text-align: center; font-weight: 600; color: #d97706;">' + pVal + '</td>' +
+        '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
+        '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
+        '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
+        '</tr>';
+    }).join('');
   }
-  
-  const respDeptBody = document.getElementById('statsByRespDeptBody');
-  if (respDeptBody) {
-    const rdKeys = Object.keys(byRespDept).sort(function(a, b) { return byRespDept[b].total - byRespDept[a].total; });
-    if (rdKeys.length === 0) {
-      respDeptBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
-    } else {
-      respDeptBody.innerHTML = rdKeys.map(function(k) {
-        const d = byRespDept[k];
-        const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
-        let rateColor = '#059669';
-        if (rate < 50) rateColor = '#d97706';
-        if (rate === 0 && d.total > 0) rateColor = '#ef4444';
-        return '<tr>' +
-          '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
-          '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #d97706;">' + d.pending + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
-          '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
-          '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
-          '</tr>';
-      }).join('');
-    }
-  }
+
+  renderRateTable('statsByDepartmentBody', byDept);
+  renderRateTable('statsByRespDeptBody', byRespDept);
   
   const respBody = document.getElementById('statsByResponsibleBody');
   if (respBody) {
     const respKeys = Object.keys(byResp).sort(function(a, b) { return byResp[b].total - byResp[a].total; });
     if (respKeys.length === 0) {
-      respBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
+      respBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
     } else {
       respBody.innerHTML = respKeys.map(function(k) {
         const r = byResp[k];
@@ -1396,7 +1469,7 @@ function renderStatsView() {
   if (catContainer) {
     const catKeys = Object.keys(byCat).sort(function(a, b) { return byCat[b] - byCat[a]; });
     if (catKeys.length === 0) {
-      catContainer.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--muted); margin:0;">ยังไม่มีข้อมูลสถิติ</p>';
+      catContainer.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--muted); margin:0;">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</p>';
     } else {
       catContainer.innerHTML = catKeys.map(function(k) {
         const count = byCat[k];
@@ -1417,6 +1490,7 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
+
 
 
 

@@ -234,6 +234,19 @@
             </div>
           </div>
 
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding: 14px 18px; background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--ink); margin: 0;">📅 แสดงช่วงเวลา:</label>
+              <select id="statsMonthSelect" style="border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font-size: 13px; background: #fff; color: var(--ink); cursor: pointer;" onchange="applyStatsFilter()">
+                <option value="all">ทุกช่วงเวลา</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="statsFilterLabel" style="font-size: 13px; color: var(--muted); font-style: italic;"></span>
+              <button id="statsClearFilterBtn" onclick="clearStatsFilter()" style="display:none; border: 1px solid #d97706; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; color: #d97706; background: #fffbeb; cursor: pointer;">✕ ล้างตัวกรอง</button>
+            </div>
+          </div>
+
           <div class="metric-grid" style="margin-bottom: 24px;">
             <div class="metric" style="border-left: 4px solid #3b82f6;">
               <span id="statsTotalCount">0</span>
