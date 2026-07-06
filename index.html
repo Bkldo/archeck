@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -287,7 +289,7 @@
         <label>Telegram Chat ID
           <input type="text" name="TELEGRAM_CHAT_ID" placeholder="เช่น -1001234567890">
         </label>
-        <label>ลิงก์แผนที่
+        <label>ลิงก์แผนที่ภายนอก (สำรอง: ปัจจุบันระบบสร้างแผนที่รวมจากฐานข้อมูลให้อัตโนมัติ)
           <input type="url" name="MAP_URL" placeholder="https://www.google.com/maps/...">
         </label>
         <label>Drive Folder ID สำหรับเก็บรูป
@@ -309,6 +311,44 @@
       </form>
     </div>
   </div>
+
+  <div id="mapModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+    <div class="modal-card map-modal-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Field Service Map</p>
+          <h3 id="mapTitle">แผนที่รวมจุดแจ้งเรื่องตรวจพื้นที่</h3>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">แสดงตำแหน่งและสถานะของเรื่องร้องเรียนทั้งหมดจากพิกัดในฐานข้อมูล</p>
+        </div>
+        <button class="icon-button" data-close-map type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div class="map-filter-bar">
+        <div class="map-stats" id="mapStatsText">กำลังโหลดพิกัด...</div>
+        <div class="map-controls">
+          <select id="mapStatusFilter" class="filter-select" aria-label="กรองตามสถานะ">
+            <option value="all">ทุกสถานะ</option>
+          </select>
+          <select id="mapCategoryFilter" class="filter-select" aria-label="กรองตามประเภท">
+            <option value="all">ทุกประเภท</option>
+          </select>
+        </div>
+      </div>
+      <div id="combinedMapContainer" class="combined-map-container"></div>
+      <div class="modal-footer map-footer">
+        <div class="map-legend">
+          <span class="legend-item"><span class="legend-dot status-received"></span> รับเรื่องแล้ว</span>
+          <span class="legend-item"><span class="legend-dot status-progress"></span> กำลังดำเนินการ</span>
+          <span class="legend-item"><span class="legend-dot status-completed"></span> แก้ไขเสร็จสิ้น</span>
+          <span class="legend-item"><span class="legend-dot status-canceled"></span> ยกเลิก</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="openExternalMapButton" class="secondary-button hidden" type="button"><i data-lucide="external-link"></i><span>แผนที่ภายนอก</span></button>
+          <button class="secondary-button" data-close-map type="button">ปิดหน้าต่าง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

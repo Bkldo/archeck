@@ -274,8 +274,7 @@ function setupNavigation() {
   });
   document.getElementById('refreshButton').addEventListener('click', loadBootstrap);
   document.getElementById('mapButton').addEventListener('click', function() {
-    if (state.settings.mapUrl) window.open(state.settings.mapUrl, '_blank');
-    else toast('ยังไม่ได้ตั้งค่าลิงก์แผนที่', true);
+    openCombinedMapModal();
   });
 }
 
@@ -289,6 +288,18 @@ function setupForms() {
   document.getElementById('settingsButton').addEventListener('click', openSettings);
   document.querySelectorAll('[data-close-modal]').forEach(function(button) { button.addEventListener('click', closeEditModal); });
   document.querySelectorAll('[data-close-settings]').forEach(function(button) { button.addEventListener('click', closeSettings); });
+  document.querySelectorAll('[data-close-map]').forEach(function(button) { button.addEventListener('click', closeCombinedMapModal); });
+  var mapStatusFilterEl = document.getElementById('mapStatusFilter');
+  if (mapStatusFilterEl) mapStatusFilterEl.addEventListener('change', renderCombinedMapMarkers);
+  var mapCategoryFilterEl = document.getElementById('mapCategoryFilter');
+  if (mapCategoryFilterEl) mapCategoryFilterEl.addEventListener('change', renderCombinedMapMarkers);
+  var externalMapBtn = document.getElementById('openExternalMapButton');
+  if (externalMapBtn) {
+    externalMapBtn.addEventListener('click', function() {
+      if (state.settings && state.settings.mapUrl) window.open(state.settings.mapUrl, '_blank');
+      else toast('ยังไม่ได้ตั้งค่าลิงก์แผนที่ภายนอก', true);
+    });
+  }
   document.getElementById('searchInput').addEventListener('input', function(e) { state.filters.publicSearch = e.target.value; renderPublicReports(); });
   document.getElementById('statusFilter').addEventListener('change', function(e) { state.filters.publicStatus = e.target.value; renderPublicReports(); });
   document.getElementById('adminSearchInput').addEventListener('input', function(e) { state.filters.adminSearch = e.target.value; renderAdminTable(); });
@@ -312,7 +323,7 @@ function applySettings() {
   document.title = title;
   document.getElementById('appTitleSide').textContent = title;
   document.getElementById('organizationName').textContent = state.settings.organizationName || 'หน่วยงานของคุณ';
-  document.getElementById('mapButton').disabled = !state.settings.mapUrl;
+  document.getElementById('mapButton').disabled = false;
 }
 
 function populateStatusFilters() {
@@ -320,6 +331,8 @@ function populateStatusFilters() {
   const adminSelect = document.getElementById('adminStatusFilter');
   publicSelect.innerHTML = '<option value="all">ทุกสถานะ</option>' + state.statuses.map(function(s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
   adminSelect.innerHTML = publicSelect.innerHTML;
+  const mapStatusSelect = document.getElementById('mapStatusFilter');
+  if (mapStatusSelect) mapStatusSelect.innerHTML = publicSelect.innerHTML;
   const editStatus = document.querySelector('#editForm [name="status"]');
   const editPriority = document.querySelector('#editForm [name="priority"]');
   editStatus.innerHTML = state.statuses.map(function(s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
@@ -392,6 +405,7 @@ function openReportDetail(id) {
     modal = document.createElement('div');
     modal.id = 'detailModal';
     modal.className = 'modal hidden';
+    modal.style.zIndex = '45';
     modal.setAttribute('role', 'dialog');
     modal.innerHTML = '<div class="modal-card detail-modal-card">' +
       '<div class="modal-heading"><div><p class="eyebrow">รายละเอียดเรื่องแจ้ง</p><h3 id="detailTitle"></h3></div>' +
@@ -474,6 +488,198 @@ function closeLightbox() {
   }
 }
 window.closeLightbox = closeLightbox;
+
+var combinedMapInstance = null;
+var mapMarkerGroup = null;
+
+function extractReportCoords(report) {
+  if (!report) return null;
+  var regex = /(-?\d{1,2}\.\d{2,8})\s*,\s*(-?\d{1,3}\.\d{2,8})/;
+  var sources = [report.geoCode, report.geoAddress, report.locationName, report.problem];
+  for (var i = 0; i < sources.length; i++) {
+    if (sources[i]) {
+      var match = String(sources[i]).match(regex);
+      if (match) {
+        var lat = parseFloat(match[1]);
+        var lng = parseFloat(match[2]);
+        if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && (lat !== 0 || lng !== 0)) {
+          return { lat: lat, lng: lng };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function getMarkerIcon(status) {
+  let color = '#ef4444';
+  if (status === 'กำลังดำเนินการ') color = '#f59e0b';
+  else if (status === 'แก้ไขเสร็จสิ้น') color = '#10b981';
+  else if (status === 'ยกเลิก') color = '#64748b';
+
+  const html = '<div style="background-color: ' + color + '; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><span style="width: 6px; height: 6px; background-color: #ffffff; border-radius: 50%;"></span></div>';
+  
+  if (typeof L !== 'undefined' && L.divIcon) {
+    return L.divIcon({
+      className: 'custom-map-marker',
+      html: html,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      popupAnchor: [0, -12]
+    });
+  }
+  return null;
+}
+
+function createPopupContent(report) {
+  let statusClass = 'received';
+  if (report.status === 'กำลังดำเนินการ') statusClass = 'progress';
+  if (report.status === 'แก้ไขเสร็จสิ้น') statusClass = 'completed';
+  if (report.status === 'ยกเลิก') statusClass = 'canceled';
+
+  let imgHtml = '';
+  if (report.beforeImageUrl) {
+    imgHtml = '<div style="margin: 8px 0;"><img src="' + escAttr(report.beforeImageUrl) + '" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; display: block;" alt="รูปก่อนแก้ไข" onerror="this.style.display=\'none\'"></div>';
+  }
+
+  let html = '<div style="font-family: \'Sarabun\', sans-serif; min-width: 210px; max-width: 260px;">' +
+    '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px;">' +
+      '<span style="font-size: 11px; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; display: inline-block;">' + esc(report.category || 'ทั่วไป') + '</span>' +
+      '<span class="status-pill ' + statusClass + '" style="font-size: 11px; padding: 2px 8px;">' + esc(report.status || 'รับเรื่องแล้ว') + '</span>' +
+    '</div>' +
+    '<h4 style="margin: 0 0 6px 0; font-size: 15px; color: #0f172a; line-height: 1.3;">' + esc(report.problem || '-') + '</h4>' +
+    '<p style="margin: 0 0 4px 0; font-size: 13px; color: #334155;">📍 <strong>สถานที่:</strong> ' + esc(report.locationName || '-') + '</p>' +
+    '<p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;">📅 <strong>วันที่:</strong> ' + esc(formatDate(report.reportDate || report.createdAt)) + '</p>' +
+    imgHtml +
+    '<div style="display: flex; gap: 6px; margin-top: 10px;">' +
+      '<button type="button" class="primary-button" style="padding: 6px 10px; font-size: 12px; flex: 1; justify-content: center;" onclick="window.openReportDetail(\'' + report.id + '\');">ดูรายละเอียด</button>';
+      
+  if (report.geoAddress) {
+    html += '<a href="' + escAttr(report.geoAddress) + '" target="_blank" rel="noopener" class="secondary-button" style="padding: 6px 10px; font-size: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center;">นำทาง</a>';
+  }
+  
+  html += '</div></div>';
+  return html;
+}
+
+function renderCombinedMapMarkers() {
+  if (!combinedMapInstance || !mapMarkerGroup || typeof L === 'undefined') return;
+  mapMarkerGroup.clearLayers();
+  
+  var statusVal = document.getElementById('mapStatusFilter') ? document.getElementById('mapStatusFilter').value : 'all';
+  var categoryVal = document.getElementById('mapCategoryFilter') ? document.getElementById('mapCategoryFilter').value : 'all';
+  
+  var reports = (state.reports && state.reports.length) ? state.reports : (state.adminReports || []);
+  
+  var bounds = [];
+  var count = 0;
+  var totalWithCoords = 0;
+  
+  reports.forEach(function(r) {
+    var coords = extractReportCoords(r);
+    if (!coords) return;
+    totalWithCoords++;
+    
+    if (statusVal !== 'all' && r.status !== statusVal) return;
+    if (categoryVal !== 'all' && r.category !== categoryVal) return;
+    
+    count++;
+    bounds.push([coords.lat, coords.lng]);
+    
+    var icon = getMarkerIcon(r.status);
+    var marker = icon ? L.marker([coords.lat, coords.lng], { icon: icon }) : L.marker([coords.lat, coords.lng]);
+    marker.bindPopup(createPopupContent(r), { maxWidth: 280, className: 'custom-map-popup' });
+    mapMarkerGroup.addLayer(marker);
+  });
+  
+  var statsEl = document.getElementById('mapStatsText');
+  if (statsEl) {
+    if (totalWithCoords === 0) {
+      statsEl.textContent = 'ยังไม่มีเรื่องแจ้งที่มีพิกัด GPS ในระบบ (' + reports.length + ' เรื่องทั้งหมด)';
+    } else {
+      statsEl.textContent = 'แสดงจุดแจ้งเรื่อง ' + count + ' จาก ' + totalWithCoords + ' จุดที่มีพิกัด (รวมทั้งหมด ' + reports.length + ' รายการ)';
+    }
+  }
+  
+  if (bounds.length > 0) {
+    if (bounds.length === 1) {
+      combinedMapInstance.setView(bounds[0], 16);
+    } else {
+      combinedMapInstance.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    }
+  } else {
+    combinedMapInstance.setView([13.70, 100.50], 12);
+  }
+}
+
+function populateMapFilters() {
+  const statusSelect = document.getElementById('mapStatusFilter');
+  const categorySelect = document.getElementById('mapCategoryFilter');
+  if (statusSelect && state.statuses) {
+    const curStatus = statusSelect.value || 'all';
+    statusSelect.innerHTML = '<option value="all">ทุกสถานะ</option>' + state.statuses.map(function(s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+    statusSelect.value = curStatus;
+  }
+  if (categorySelect) {
+    const curCat = categorySelect.value || 'all';
+    const defaultCats = ['ความสะอาด', 'ถนน/ทางเท้า', 'ไฟฟ้า/แสงสว่าง', 'น้ำท่วม/ระบายน้ำ', 'สิ่งกีดขวาง', 'ความปลอดภัย', 'อื่นๆ'];
+    const catsSet = new Set(defaultCats);
+    const reports = (state.reports && state.reports.length) ? state.reports : (state.adminReports || []);
+    reports.forEach(function(r) { if (r && r.category) catsSet.add(r.category); });
+    categorySelect.innerHTML = '<option value="all">ทุกประเภท</option>' + Array.from(catsSet).map(function(c) {
+      return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+    }).join('');
+    categorySelect.value = curCat;
+  }
+}
+
+function openCombinedMapModal() {
+  if (typeof L === 'undefined') {
+    toast('ไม่สามารถโหลดแผนที่ได้ (กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต)', true);
+    if (state.settings && state.settings.mapUrl) window.open(state.settings.mapUrl, '_blank');
+    return;
+  }
+  
+  var modal = document.getElementById('mapModal');
+  if (!modal) return;
+  
+  populateMapFilters();
+  
+  var extBtn = document.getElementById('openExternalMapButton');
+  if (extBtn) {
+    if (state.settings && state.settings.mapUrl) extBtn.classList.remove('hidden');
+    else extBtn.classList.add('hidden');
+  }
+  
+  modal.classList.remove('hidden');
+  
+  setTimeout(function() {
+    if (!combinedMapInstance) {
+      var container = document.getElementById('combinedMapContainer');
+      if (container) {
+        combinedMapInstance = L.map('combinedMapContainer', { zoomControl: true }).setView([13.70, 100.50], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(combinedMapInstance);
+        mapMarkerGroup = L.layerGroup().addTo(combinedMapInstance);
+      }
+    }
+    if (combinedMapInstance) {
+      combinedMapInstance.invalidateSize();
+      renderCombinedMapMarkers();
+    }
+    if (window.lucide) lucide.createIcons();
+  }, 150);
+}
+window.openCombinedMapModal = openCombinedMapModal;
+
+function closeCombinedMapModal() {
+  var modal = document.getElementById('mapModal');
+  if (modal) modal.classList.add('hidden');
+}
+window.closeCombinedMapModal = closeCombinedMapModal;
+
 
 function submitReport(event) {
   event.preventDefault();
@@ -902,3 +1108,7 @@ function esc(value) {
 
 function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+
+
+

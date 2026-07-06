@@ -258,6 +258,91 @@ td { line-height: 1.45; }
   padding: 20px;
 }
 .settings-card { width: min(680px, 100%); }
+.map-modal-card {
+  width: min(1080px, 98%);
+  max-height: min(92vh, 950px);
+  display: flex;
+  flex-direction: column;
+}
+.map-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.map-stats {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 14px;
+}
+.map-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.map-controls select {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--ink);
+}
+.combined-map-container {
+  width: 100%;
+  height: min(580px, 62vh);
+  min-height: 380px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background-color: #f1f5f9;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.map-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.map-legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.legend-dot.status-received { background-color: #ef4444; }
+.legend-dot.status-progress { background-color: #f59e0b; }
+.legend-dot.status-completed { background-color: #10b981; }
+.legend-dot.status-canceled { background-color: #64748b; }
+.custom-map-popup .leaflet-popup-content-wrapper {
+  border-radius: var(--radius);
+  padding: 4px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+}
+.custom-map-popup .leaflet-popup-content {
+  margin: 10px 12px;
+  line-height: 1.45;
+}
 .edit-preview {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -578,4 +663,8 @@ td { line-height: 1.45; }
   .report-image-pair { grid-template-columns: 1fr; }
   .image-slot { border-right: 0; border-bottom: 1px solid var(--line); }
   .image-slot:last-child { border-bottom: 0; }
+  .map-filter-bar, .map-footer { flex-direction: column; align-items: stretch; }
+  .map-controls { flex-direction: column; }
+  .map-controls select { width: 100%; }
+  .combined-map-container { height: min(450px, 55vh); }
 }
