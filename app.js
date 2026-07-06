@@ -954,6 +954,10 @@ function renderAdmin(stats) {
   document.getElementById('loginPanel').classList.add('hidden');
   document.getElementById('adminPanel').classList.remove('hidden');
   document.getElementById('adminUserLabel').textContent = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
+  const settingsBtn = document.getElementById('settingsButton');
+  if (settingsBtn) {
+    settingsBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
+  }
   renderStats(stats || buildLocalStats(state.adminReports));
   renderAdminTable();
   renderStatsView();
