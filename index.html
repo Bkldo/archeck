@@ -320,7 +320,10 @@
           <h3 id="mapTitle">แผนที่รวมจุดแจ้งเรื่องตรวจพื้นที่</h3>
           <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">แสดงตำแหน่งและสถานะของเรื่องร้องเรียนทั้งหมดจากพิกัดในฐานข้อมูล</p>
         </div>
-        <button class="icon-button" data-close-map type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="toggleFullscreenMapHeaderBtn" class="icon-button" type="button" aria-label="ขยายเต็มจอ" title="ขยายเต็มจอ"><i id="toggleFullscreenMapHeaderIcon" data-lucide="maximize"></i></button>
+          <button class="icon-button" data-close-map type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+        </div>
       </div>
       <div class="map-filter-bar">
         <div class="map-stats" id="mapStatsText">กำลังโหลดพิกัด...</div>
@@ -341,8 +344,10 @@
           <span class="legend-item"><span class="legend-dot status-completed"></span> แก้ไขเสร็จสิ้น</span>
           <span class="legend-item"><span class="legend-dot status-canceled"></span> ยกเลิก</span>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button id="openExternalMapButton" class="secondary-button hidden" type="button"><i data-lucide="external-link"></i><span>แผนที่ภายนอก</span></button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="toggleFullscreenMapBtn" class="secondary-button" type="button"><i id="toggleFullscreenMapIcon" data-lucide="maximize"></i><span id="toggleFullscreenMapText">เต็มจอ</span></button>
+          <button id="openNewTabMapBtn" class="secondary-button" type="button"><i data-lucide="external-link"></i><span>เปิดหน้าจอใหม่</span></button>
+          <button id="openExternalMapButton" class="secondary-button hidden" type="button"><i data-lucide="map"></i><span>แผนที่ภายนอก</span></button>
           <button class="secondary-button" data-close-map type="button">ปิดหน้าต่าง</button>
         </div>
       </div>

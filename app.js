@@ -253,6 +253,13 @@ function loadBootstrap(isManual) {
       } else if (savedView && !manual) {
         showView(savedView);
       }
+      var urlParams = new URLSearchParams(window.location.search);
+      if (initial === 'map' || urlParams.get('view') === 'map') {
+        openCombinedMapModal();
+        if (urlParams.get('fullscreen') === '1') {
+          setTimeout(function() { toggleMapFullscreen(true); }, 200);
+        }
+      }
       if (manual) showSuccessPopup('โหลดข้อมูลล่าสุดเรียบร้อยแล้ว');
     })
     .catch(function(err) {
@@ -300,6 +307,12 @@ function setupForms() {
       else toast('ยังไม่ได้ตั้งค่าลิงก์แผนที่ภายนอก', true);
     });
   }
+  var fsBtn = document.getElementById('toggleFullscreenMapBtn');
+  if (fsBtn) fsBtn.addEventListener('click', function() { toggleMapFullscreen(); });
+  var fsHeaderBtn = document.getElementById('toggleFullscreenMapHeaderBtn');
+  if (fsHeaderBtn) fsHeaderBtn.addEventListener('click', function() { toggleMapFullscreen(); });
+  var newTabBtn = document.getElementById('openNewTabMapBtn');
+  if (newTabBtn) newTabBtn.addEventListener('click', function() { openMapInNewWindow(); });
   document.getElementById('searchInput').addEventListener('input', function(e) { state.filters.publicSearch = e.target.value; renderPublicReports(); });
   document.getElementById('statusFilter').addEventListener('change', function(e) { state.filters.publicStatus = e.target.value; renderPublicReports(); });
   document.getElementById('adminSearchInput').addEventListener('input', function(e) { state.filters.adminSearch = e.target.value; renderAdminTable(); });
@@ -722,9 +735,54 @@ window.openCombinedMapModal = openCombinedMapModal;
 
 function closeCombinedMapModal() {
   var modal = document.getElementById('mapModal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    if (modal.classList.contains('is-fullscreen')) {
+      toggleMapFullscreen(false);
+    }
+  }
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('view') === 'map' || params.get('fullscreen') === '1') {
+    var url = window.location.href.split('?')[0];
+    if (history.replaceState) history.replaceState(null, '', url);
+  }
 }
 window.closeCombinedMapModal = closeCombinedMapModal;
+
+function toggleMapFullscreen(forceState) {
+  var modal = document.getElementById('mapModal');
+  if (!modal) return;
+  var isFull = typeof forceState === 'boolean' ? forceState : !modal.classList.contains('is-fullscreen');
+  modal.classList.toggle('is-fullscreen', isFull);
+  
+  var btnText = document.getElementById('toggleFullscreenMapText');
+  var btnIcon = document.getElementById('toggleFullscreenMapIcon');
+  var headerIcon = document.getElementById('toggleFullscreenMapHeaderIcon');
+  var headerBtn = document.getElementById('toggleFullscreenMapHeaderBtn');
+  
+  if (btnText) btnText.textContent = isFull ? 'ย่อหน้าต่าง' : 'เต็มจอ';
+  if (btnIcon) btnIcon.setAttribute('data-lucide', isFull ? 'minimize' : 'maximize');
+  if (headerIcon) headerIcon.setAttribute('data-lucide', isFull ? 'minimize' : 'maximize');
+  if (headerBtn) headerBtn.setAttribute('title', isFull ? 'ย่อหน้าต่าง' : 'ขยายเต็มจอ');
+  
+  if (window.lucide) lucide.createIcons();
+  
+  if (combinedMapInstance) {
+    setTimeout(function() {
+      combinedMapInstance.invalidateSize();
+      if (isFull) {
+        renderCombinedMapMarkers();
+      }
+    }, 150);
+  }
+}
+window.toggleMapFullscreen = toggleMapFullscreen;
+
+function openMapInNewWindow() {
+  var url = window.location.href.split('?')[0] + '?view=map&fullscreen=1';
+  window.open(url, '_blank');
+}
+window.openMapInNewWindow = openMapInNewWindow;
 
 
 function submitReport(event) {
