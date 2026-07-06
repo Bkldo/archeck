@@ -24,6 +24,7 @@ const state = {
 const pageTitles = {
   reportView: 'แจ้งเรื่องตรวจพื้นที่',
   trackView: 'ติดตามสถานะเรื่องแจ้ง',
+  statsView: 'รายงานสถิติระบบ',
   adminView: 'ผู้ดูแลระบบ'
 };
 
@@ -250,6 +251,8 @@ function loadBootstrap(isManual) {
         showView('adminView');
       } else if (initial === 'table' || initial === 'track') {
         showView('trackView');
+      } else if (initial === 'stats' || initial === 'report' || initial === 'analytics' || initial === 'statsview') {
+        showView('statsView');
       } else if (savedView && !manual) {
         showView(savedView);
       }
@@ -335,6 +338,7 @@ function showView(viewId) {
   document.querySelectorAll('.view').forEach(function(view) { view.classList.toggle('active', view.id === viewId); });
   document.querySelectorAll('.nav-item').forEach(function(button) { button.classList.toggle('active', button.dataset.view === viewId); });
   document.getElementById('pageTitle').textContent = pageTitles[viewId] || pageTitles.reportView;
+  if (viewId === 'statsView') renderStatsView();
 }
 
 function applySettings() {
@@ -363,6 +367,7 @@ function renderAll(stats) {
   renderLatest();
   renderPublicReports();
   if (state.user) renderAdmin();
+  renderStatsView();
   if (window.lucide) lucide.createIcons();
 }
 
@@ -539,6 +544,9 @@ function getMarkerIcon(status) {
   } else if (status === 'แก้ไขเสร็จสิ้น') {
     color = '#10b981';
     innerSvg = '<path d="M11.5 16l3 3 6-6" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  } else if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') {
+    color = '#8b5cf6';
+    innerSvg = '<path d="M12 16h8m-3-3l3 3-3 3" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
   } else if (status === 'ยกเลิก') {
     color = '#64748b';
     innerSvg = '<path d="M12 12l8 8M20 12l-8 8" stroke="#64748b" stroke-width="2.2" stroke-linecap="round"/>';
@@ -569,6 +577,7 @@ function createPopupContent(report) {
   let statusClass = 'received';
   if (report.status === 'กำลังดำเนินการ') statusClass = 'progress';
   if (report.status === 'แก้ไขเสร็จสิ้น') statusClass = 'completed';
+  if (report.status === 'ส่งต่อ/ประสานหน่วยงานอื่น') statusClass = 'forwarded';
   if (report.status === 'ยกเลิก') statusClass = 'canceled';
 
   let imgHtml = '';
@@ -946,6 +955,7 @@ function renderAdmin(stats) {
   document.getElementById('adminUserLabel').textContent = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
   renderStats(stats || buildLocalStats(state.adminReports));
   renderAdminTable();
+  renderStatsView();
 }
 
 function renderAdminTable() {
@@ -1125,15 +1135,17 @@ function buildLocalStats(reports) {
     if (report.status === 'รับเรื่องแล้ว') stats.received += 1;
     if (report.status === 'กำลังดำเนินการ') stats.inProgress += 1;
     if (report.status === 'แก้ไขเสร็จสิ้น') stats.completed += 1;
+    if (report.status === 'ส่งต่อ/ประสานหน่วยงานอื่น') stats.forwarded += 1;
     if (report.status === 'ยกเลิก') stats.canceled += 1;
     if (report.priority === 'เร่งด่วน' || report.priority === 'วิกฤต') stats.urgent += 1;
     return stats;
-  }, { total: 0, received: 0, inProgress: 0, completed: 0, canceled: 0, urgent: 0 });
+  }, { total: 0, received: 0, inProgress: 0, completed: 0, forwarded: 0, canceled: 0, urgent: 0 });
 }
 
 function statusClass(status) {
   if (status === 'แก้ไขเสร็จสิ้น') return 'done';
   if (status === 'กำลังดำเนินการ') return 'progress';
+  if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') return 'forwarded';
   if (status === 'ยกเลิก') return 'cancel';
   return 'received';
 }
@@ -1253,8 +1265,121 @@ function esc(value) {
   });
 }
 
-function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
-function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+function renderStatsView() {
+  const reports = state.adminReports.length ? state.adminReports : (state.reports.length ? state.reports : []);
+  const total = reports.length;
+  let pending = 0;
+  let completed = 0;
+  let forwarded = 0;
+  
+  const byDept = {};
+  const byResp = {};
+  const byCat = {};
+  
+  reports.forEach(function(r) {
+    const status = r.status || 'รับเรื่องแล้ว';
+    const dept = r.department || 'ไม่ระบุฝ่าย/หน่วยงาน';
+    const resp = r.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ';
+    const cat = r.category || 'ทั่วไป';
+    
+    if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') pending++;
+    if (status === 'แก้ไขเสร็จสิ้น') completed++;
+    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') forwarded++;
+    
+    if (!byDept[dept]) byDept[dept] = { total: 0, pending: 0, completed: 0, forwarded: 0 };
+    byDept[dept].total++;
+    if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byDept[dept].pending++;
+    if (status === 'แก้ไขเสร็จสิ้น') byDept[dept].completed++;
+    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byDept[dept].forwarded++;
+    
+    if (!byResp[resp]) byResp[resp] = { total: 0, inProgress: 0, completed: 0, forwarded: 0 };
+    byResp[resp].total++;
+    if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byResp[resp].inProgress++;
+    if (status === 'แก้ไขเสร็จสิ้น') byResp[resp].completed++;
+    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byResp[resp].forwarded++;
+    
+    byCat[cat] = (byCat[cat] || 0) + 1;
+  });
+  
+  setText('statsTotalCount', total);
+  setText('statsPendingCount', pending);
+  setText('statsCompletedCount', completed);
+  setText('statsForwardedCount', forwarded);
+  
+  const deptBody = document.getElementById('statsByDepartmentBody');
+  if (deptBody) {
+    const deptKeys = Object.keys(byDept).sort(function(a, b) { return byDept[b].total - byDept[a].total; });
+    if (deptKeys.length === 0) {
+      deptBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
+    } else {
+      deptBody.innerHTML = deptKeys.map(function(k) {
+        const d = byDept[k];
+        const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
+        let rateColor = '#059669';
+        if (rate < 50) rateColor = '#d97706';
+        if (rate === 0 && d.total > 0) rateColor = '#ef4444';
+        return '<tr>' +
+          '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
+          '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #d97706;">' + d.pending + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
+          '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+  
+  const respBody = document.getElementById('statsByResponsibleBody');
+  if (respBody) {
+    const respKeys = Object.keys(byResp).sort(function(a, b) { return byResp[b].total - byResp[a].total; });
+    if (respKeys.length === 0) {
+      respBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
+    } else {
+      respBody.innerHTML = respKeys.map(function(k) {
+        const r = byResp[k];
+        let statusBadge = '<span class="status-pill received" style="font-size:11px;">รับเรื่อง/รอดำเนินการ</span>';
+        if (r.completed === r.total && r.total > 0) statusBadge = '<span class="status-pill done" style="font-size:11px;">เสร็จสิ้นทั้งหมด</span>';
+        else if (r.inProgress > 0) statusBadge = '<span class="status-pill progress" style="font-size:11px;">กำลังดำเนินการ</span>';
+        else if (r.forwarded > 0) statusBadge = '<span class="status-pill forwarded" style="font-size:11px;">ประสานงานต่อ</span>';
+        
+        return '<tr>' +
+          '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
+          '<td style="text-align: center; font-weight: 700;">' + r.total + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #d97706;">' + r.inProgress + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #059669;">' + r.completed + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + r.forwarded + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+  
+  const catContainer = document.getElementById('statsByCategoryContainer');
+  if (catContainer) {
+    const catKeys = Object.keys(byCat).sort(function(a, b) { return byCat[b] - byCat[a]; });
+    if (catKeys.length === 0) {
+      catContainer.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--muted); margin:0;">ยังไม่มีข้อมูลสถิติ</p>';
+    } else {
+      catContainer.innerHTML = catKeys.map(function(k) {
+        const count = byCat[k];
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return '<div style="background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line);">' +
+          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">' +
+            '<span style="font-weight: 700; color: var(--ink); font-size: 14px;">' + esc(k) + '</span>' +
+            '<span style="font-weight: 700; color: #3b82f6; font-size: 14px;">' + count + ' เรื่อง (' + pct + '%)</span>' +
+          '</div>' +
+          '<div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">' +
+            '<div style="width: ' + pct + '%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 999px; transition: width 0.5s ease;"></div>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+  
+  if (window.lucide) lucide.createIcons();
+}
+window.renderStatsView = renderStatsView;
 
 
 

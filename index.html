@@ -25,6 +25,7 @@
       <nav class="nav-stack">
         <button class="nav-item active" data-view="reportView"><i data-lucide="file-plus-2"></i><span>แจ้งเรื่อง</span></button>
         <button class="nav-item" data-view="trackView"><i data-lucide="list-filter"></i><span>ติดตามสถานะ</span></button>
+        <button class="nav-item" data-view="statsView"><i data-lucide="bar-chart-3"></i><span>รายงานสถิติ</span></button>
         <button class="nav-item" data-view="adminView"><i data-lucide="shield-check"></i><span>ผู้ดูแลระบบ</span></button>
       </nav>
       <div class="sidebar-footer">
@@ -222,6 +223,82 @@
           </section>
         </div>
       </section>
+
+      <section class="view" id="statsView">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Statistics & Analytics</p>
+              <h3>รายงานสถิติการรับเรื่องและการดำเนินงาน</h3>
+              <p style="margin:4px 0 0; color:var(--muted); font-size:14px;">สรุปภาพรวมจำนวนเรื่องแจ้ง ปัญหาคงค้าง และผลการดำเนินงานแยกตามฝ่ายที่แจ้งและผู้รับผิดชอบ</p>
+            </div>
+          </div>
+
+          <div class="metric-grid" style="margin-bottom: 24px;">
+            <div class="metric" style="border-left: 4px solid #3b82f6;">
+              <span id="statsTotalCount">0</span>
+              <p>📌 เรื่องทั้งหมด</p>
+            </div>
+            <div class="metric" style="border-left: 4px solid #f59e0b;">
+              <span id="statsPendingCount">0</span>
+              <p>⏳ เรื่องคงค้างรวม</p>
+            </div>
+            <div class="metric" style="border-left: 4px solid #10b981;">
+              <span id="statsCompletedCount">0</span>
+              <p>✅ แก้ไขเสร็จสิ้น</p>
+            </div>
+            <div class="metric" style="border-left: 4px solid #8b5cf6;">
+              <span id="statsForwardedCount">0</span>
+              <p>🔄 ส่งต่อ/ประสานงาน</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 24px;">
+            <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="building-2"></i> สถิติแยกตามฝ่ายที่แจ้ง (Reporter Department)</h4>
+              <div class="table-wrap">
+                <table class="data-table" style="min-width: 650px;">
+                  <thead>
+                    <tr>
+                      <th>ฝ่ายที่แจ้ง / หน่วยงาน</th>
+                      <th style="text-align: center;">ทั้งหมด</th>
+                      <th style="text-align: center; color: #d97706;">เรื่องคงค้าง</th>
+                      <th style="text-align: center; color: #059669;">แก้ไขเสร็จสิ้น</th>
+                      <th style="text-align: center; color: #7c3aed;">ส่งต่อ/ประสานงาน</th>
+                      <th style="text-align: center;">อัตราสำเร็จ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="statsByDepartmentBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="user-check"></i> สถิติแยกตามผู้รับผิดชอบ (หลังแก้ไข) (Responsible Person/Unit)</h4>
+              <div class="table-wrap">
+                <table class="data-table" style="min-width: 650px;">
+                  <thead>
+                    <tr>
+                      <th>ผู้รับผิดชอบ / หน่วยงานแก้ไข</th>
+                      <th style="text-align: center;">ทั้งหมด</th>
+                      <th style="text-align: center; color: #d97706;">กำลังดำเนินการ</th>
+                      <th style="text-align: center; color: #059669;">แก้ไขเสร็จสิ้น</th>
+                      <th style="text-align: center; color: #7c3aed;">ส่งต่อ/ประสานงาน</th>
+                      <th>สถานะ/ประสิทธิภาพ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="statsByResponsibleBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="pie-chart"></i> สถิติแยกตามประเภทปัญหา (Category)</h4>
+              <div id="statsByCategoryContainer" style="display: grid; gap: 12px; margin-top: 10px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -344,6 +421,7 @@
           <span class="legend-item"><span class="legend-dot status-received"></span> รับเรื่องแล้ว</span>
           <span class="legend-item"><span class="legend-dot status-progress"></span> กำลังดำเนินการ</span>
           <span class="legend-item"><span class="legend-dot status-completed"></span> แก้ไขเสร็จสิ้น</span>
+          <span class="legend-item"><span class="legend-dot status-forwarded"></span> ส่งต่อ/ประสานงาน</span>
           <span class="legend-item"><span class="legend-dot status-canceled"></span> ยกเลิก</span>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">

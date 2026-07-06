@@ -195,6 +195,7 @@ button:disabled { opacity: .64; cursor: wait; }
 .status-pill.received { color: #1d4ed8; background: #dbeafe; }
 .status-pill.progress { color: #9a3412; background: #ffedd5; }
 .status-pill.done { color: #166534; background: #dcfce7; }
+.status-pill.forwarded { color: #6b21a8; background: #f3e8ff; }
 .status-pill.cancel { color: #991b1b; background: #fee2e2; }
 .priority-pill { color: #7c2d12; background: #ffedd5; }
 .priority-pill.normal { color: #334155; background: #e2e8f0; }
@@ -369,6 +370,7 @@ td { line-height: 1.45; }
 .legend-dot.status-received { background-color: #ef4444; }
 .legend-dot.status-progress { background-color: #f59e0b; }
 .legend-dot.status-completed { background-color: #10b981; }
+.legend-dot.status-forwarded { background-color: #8b5cf6; }
 .legend-dot.status-canceled { background-color: #64748b; }
 .custom-map-popup .leaflet-popup-content-wrapper {
   border-radius: var(--radius);
