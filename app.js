@@ -1001,7 +1001,10 @@ function openEdit(id) {
   form.status.value = report.status;
   form.priority.value = report.priority || 'ปกติ';
   form.assignedTo.value = report.assignedTo || '';
-  if (form.respDepartment) form.respDepartment.value = report.respDepartment || '';
+  if (form.respDepartment) {
+    // Select or fallback to empty (— ไม่ระบุ —)
+    form.respDepartment.value = report.respDepartment || '';
+  }
   form.adminNote.value = report.adminNote || '';
   form.afterImage.value = '';
   document.getElementById('editTitle').textContent = report.id + ' · ' + report.locationName;
@@ -1271,12 +1274,12 @@ function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function getReportMonthKey(r) {
-  const raw = r.createdAt || r.reportDate || '';
+  // ใช้ reportDate (วันที่รับเรื่อง) เป็นหลัก ถ้าไม่มีใช้ createdAt
+  const raw = r.reportDate || r.createdAt || '';
   if (!raw) return null;
-  // Support common date formats: "2025/07/06 12:34" or "6/7/2025 12:34" or ISO
   let d = new Date(raw);
   if (isNaN(d.getTime())) {
-    // Try DD/MM/YYYY or DD/M/YYYY
+    // Try DD/MM/YYYY or DD/M/YYYY (Google Sheets display format)
     const parts = raw.split(/[\/\-\s]/);
     if (parts.length >= 3) {
       const day = parseInt(parts[0], 10);
