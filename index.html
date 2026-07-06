@@ -321,6 +321,7 @@
           <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">แสดงตำแหน่งและสถานะของเรื่องร้องเรียนทั้งหมดจากพิกัดในฐานข้อมูล</p>
         </div>
         <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="toggleMapHeaderBtn" class="icon-button" type="button" aria-label="ซ่อน/แสดงเมนูด้านบน" title="ซ่อนเมนูด้านบน"><i id="toggleMapHeaderIcon" data-lucide="chevrons-up"></i></button>
           <button id="toggleFullscreenMapHeaderBtn" class="icon-button" type="button" aria-label="ขยายเต็มจอ" title="ขยายเต็มจอ"><i id="toggleFullscreenMapHeaderIcon" data-lucide="maximize"></i></button>
           <button class="icon-button" data-close-map type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
         </div>
@@ -334,6 +335,7 @@
           <select id="mapCategoryFilter" class="filter-select" aria-label="กรองตามประเภท">
             <option value="all">ทุกประเภท</option>
           </select>
+          <button id="toggleMapHeaderBtnFilter" class="secondary-button" type="button" style="padding: 6px 10px; font-size: 13px;" title="ซ่อนเมนูด้านบนเพื่อขยายแผนที่"><i id="toggleMapHeaderBtnFilterIcon" data-lucide="chevrons-up"></i><span id="toggleMapHeaderBtnFilterText">ซ่อนเมนู</span></button>
         </div>
       </div>
       <div id="combinedMapContainer" class="combined-map-container"></div>
@@ -345,6 +347,7 @@
           <span class="legend-item"><span class="legend-dot status-canceled"></span> ยกเลิก</span>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="toggleMapHeaderBtnFooter" class="secondary-button" type="button" title="ซ่อน/แสดงเมนูด้านบน"><i id="toggleMapHeaderBtnFooterIcon" data-lucide="chevrons-up"></i><span id="toggleMapHeaderBtnFooterText">ซ่อนเมนูบน</span></button>
           <button id="toggleFullscreenMapBtn" class="secondary-button" type="button"><i id="toggleFullscreenMapIcon" data-lucide="maximize"></i><span id="toggleFullscreenMapText">เต็มจอ</span></button>
           <button id="openNewTabMapBtn" class="secondary-button" type="button"><i data-lucide="external-link"></i><span>เปิดหน้าจอใหม่</span></button>
           <button id="openExternalMapButton" class="secondary-button hidden" type="button"><i data-lucide="map"></i><span>แผนที่ภายนอก</span></button>

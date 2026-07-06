@@ -287,6 +287,19 @@ td { line-height: 1.45; }
   min-height: 0 !important;
   border-radius: var(--radius) !important;
 }
+.map-modal-card.is-collapsed-header .eyebrow,
+.map-modal-card.is-collapsed-header p[style*="font-size:13px"],
+.map-modal-card.is-collapsed-header .map-filter-bar {
+  display: none !important;
+}
+.map-modal-card.is-collapsed-header .modal-heading {
+  margin-bottom: 8px !important;
+  padding-bottom: 8px !important;
+}
+.map-modal-card.is-collapsed-header h3#mapTitle {
+  font-size: 16px !important;
+  margin: 0 !important;
+}
 .map-filter-bar {
   display: flex;
   justify-content: space-between;

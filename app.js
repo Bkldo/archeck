@@ -313,6 +313,12 @@ function setupForms() {
   if (fsHeaderBtn) fsHeaderBtn.addEventListener('click', function() { toggleMapFullscreen(); });
   var newTabBtn = document.getElementById('openNewTabMapBtn');
   if (newTabBtn) newTabBtn.addEventListener('click', function() { openMapInNewWindow(); });
+  var topMenuBtn1 = document.getElementById('toggleMapHeaderBtn');
+  if (topMenuBtn1) topMenuBtn1.addEventListener('click', function() { toggleMapHeader(); });
+  var topMenuBtn2 = document.getElementById('toggleMapHeaderBtnFilter');
+  if (topMenuBtn2) topMenuBtn2.addEventListener('click', function() { toggleMapHeader(); });
+  var topMenuBtn3 = document.getElementById('toggleMapHeaderBtnFooter');
+  if (topMenuBtn3) topMenuBtn3.addEventListener('click', function() { toggleMapHeader(); });
   document.getElementById('searchInput').addEventListener('input', function(e) { state.filters.publicSearch = e.target.value; renderPublicReports(); });
   document.getElementById('statusFilter').addEventListener('change', function(e) { state.filters.publicStatus = e.target.value; renderPublicReports(); });
   document.getElementById('adminSearchInput').addEventListener('input', function(e) { state.filters.adminSearch = e.target.value; renderAdminTable(); });
@@ -740,6 +746,10 @@ function closeCombinedMapModal() {
     if (modal.classList.contains('is-fullscreen')) {
       toggleMapFullscreen(false);
     }
+    var card = modal.querySelector('.map-modal-card');
+    if (card && card.classList.contains('is-collapsed-header')) {
+      toggleMapHeader(false);
+    }
   }
   var params = new URLSearchParams(window.location.search);
   if (params.get('view') === 'map' || params.get('fullscreen') === '1') {
@@ -783,6 +793,39 @@ function openMapInNewWindow() {
   window.open(url, '_blank');
 }
 window.openMapInNewWindow = openMapInNewWindow;
+
+function toggleMapHeader(forceState) {
+  var card = document.querySelector('.map-modal-card');
+  if (!card) return;
+  var isCol = typeof forceState === 'boolean' ? forceState : !card.classList.contains('is-collapsed-header');
+  card.classList.toggle('is-collapsed-header', isCol);
+  
+  var headerIcon = document.getElementById('toggleMapHeaderIcon');
+  var headerBtn = document.getElementById('toggleMapHeaderBtn');
+  var filterBtnText = document.getElementById('toggleMapHeaderBtnFilterText');
+  var filterBtnIcon = document.getElementById('toggleMapHeaderBtnFilterIcon');
+  var footerBtnText = document.getElementById('toggleMapHeaderBtnFooterText');
+  var footerBtnIcon = document.getElementById('toggleMapHeaderBtnFooterIcon');
+  
+  if (headerIcon) headerIcon.setAttribute('data-lucide', isCol ? 'chevrons-down' : 'chevrons-up');
+  if (headerBtn) headerBtn.setAttribute('title', isCol ? 'แสดงเมนูด้านบน' : 'ซ่อนเมนูด้านบน');
+  
+  if (filterBtnText) filterBtnText.textContent = isCol ? 'แสดงเมนู' : 'ซ่อนเมนู';
+  if (filterBtnIcon) filterBtnIcon.setAttribute('data-lucide', isCol ? 'chevrons-down' : 'chevrons-up');
+  
+  if (footerBtnText) footerBtnText.textContent = isCol ? 'แสดงเมนูบน' : 'ซ่อนเมนูบน';
+  if (footerBtnIcon) footerBtnIcon.setAttribute('data-lucide', isCol ? 'chevrons-down' : 'chevrons-up');
+  
+  if (window.lucide) lucide.createIcons();
+  
+  if (combinedMapInstance) {
+    setTimeout(function() {
+      combinedMapInstance.invalidateSize();
+    }, 150);
+  }
+}
+window.toggleMapHeader = toggleMapHeader;
+
 
 
 function submitReport(event) {
