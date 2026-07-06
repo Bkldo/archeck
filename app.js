@@ -657,11 +657,42 @@ function openCombinedMapModal() {
     if (!combinedMapInstance) {
       var container = document.getElementById('combinedMapContainer');
       if (container) {
-        combinedMapInstance = L.map('combinedMapContainer', { zoomControl: true }).setView([13.70, 100.50], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        combinedMapInstance = L.map('combinedMapContainer', { zoomControl: false }).setView([13.70, 100.50], 12);
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&hl=th&x={x}&y={y}&z={z}', {
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '&copy; Google Maps'
         }).addTo(combinedMapInstance);
+        
+        var locateControl = L.control({ position: 'bottomright' });
+        locateControl.onAdd = function() {
+          var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          container.style.backgroundColor = '#fff';
+          container.style.cursor = 'pointer';
+          container.style.width = '32px';
+          container.style.height = '32px';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.marginBottom = '8px';
+          container.title = 'แสดงตำแหน่งของคุณ / รวมทุกหมุด';
+          container.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>';
+          container.onclick = function(e) {
+            L.DomEvent.stopPropagation(e);
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(function(pos) {
+                combinedMapInstance.setView([pos.coords.latitude, pos.coords.longitude], 16);
+              }, function() {
+                renderCombinedMapMarkers();
+              });
+            } else {
+              renderCombinedMapMarkers();
+            }
+          };
+          return container;
+        };
+        locateControl.addTo(combinedMapInstance);
+        L.control.zoom({ position: 'bottomright' }).addTo(combinedMapInstance);
         mapMarkerGroup = L.layerGroup().addTo(combinedMapInstance);
       }
     }
