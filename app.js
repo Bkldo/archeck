@@ -513,23 +513,23 @@ function extractReportCoords(report) {
 
 function getMarkerIcon(status) {
   let color = '#ef4444';
-  let innerSvg = '<path d="M30 19v11M30 36.5h.01" stroke="#ef4444" stroke-width="4.5" stroke-linecap="round"/>';
+  let innerSvg = '<path d="M16 11v5M16 19.5h.01" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>';
   if (status === 'กำลังดำเนินการ') {
     color = '#f59e0b';
-    innerSvg = '<path d="M30 20v9l5 3.5" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+    innerSvg = '<path d="M16 11.5v4.5l2.5 1.5" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
   } else if (status === 'แก้ไขเสร็จสิ้น') {
     color = '#10b981';
-    innerSvg = '<path d="M21 30l6 6 12-12" stroke="#10b981" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    innerSvg = '<path d="M11.5 16l3 3 6-6" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
   } else if (status === 'ยกเลิก') {
     color = '#64748b';
-    innerSvg = '<path d="M22 22l16 16M38 22l-16 16" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>';
+    innerSvg = '<path d="M12 12l8 8M20 12l-8 8" stroke="#64748b" stroke-width="2.2" stroke-linecap="round"/>';
   }
 
-  const html = '<div class="pin-marker-inner" style="filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.5)); cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">' +
-    '<svg width="60" height="80" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-      '<ellipse cx="30" cy="76" rx="14" ry="3.5" fill="rgba(0, 0, 0, 0.3)"/>' +
-      '<path d="M30 2C14.54 2 2 14.54 2 30c0 21 28 46 28 46s28-25 28-46C58 14.54 45.46 2 30 2z" fill="' + color + '" stroke="#ffffff" stroke-width="3.5"/>' +
-      '<circle cx="30" cy="30" r="16" fill="#ffffff"/>' +
+  const html = '<div class="pin-marker-inner" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);">' +
+    '<svg width="32" height="44" viewBox="0 0 32 44" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<ellipse cx="16" cy="41" rx="8" ry="2" fill="rgba(0, 0, 0, 0.28)"/>' +
+      '<path d="M16 1C7.72 1 1 7.72 1 16c0 11.5 15 24 15 24s15-12.5 15-24C31 7.72 24.28 1 16 1z" fill="' + color + '" stroke="#ffffff" stroke-width="2.2"/>' +
+      '<circle cx="16" cy="16" r="8.5" fill="#ffffff"/>' +
       innerSvg +
     '</svg>' +
   '</div>';
@@ -538,9 +538,9 @@ function getMarkerIcon(status) {
     return L.divIcon({
       className: 'custom-map-marker-pin',
       html: html,
-      iconSize: [60, 80],
-      iconAnchor: [30, 76],
-      popupAnchor: [0, -70]
+      iconSize: [32, 44],
+      iconAnchor: [16, 40],
+      popupAnchor: [0, -36]
     });
   }
   return null;
