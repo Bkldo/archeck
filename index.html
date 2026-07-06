@@ -274,6 +274,25 @@
             </div>
 
             <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
+              <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="building"></i> สถิติแยกตามฝ่ายที่รับผิดชอบ (หลังแก้ไข) (Responsible Department)</h4>
+              <div class="table-wrap">
+                <table class="data-table" style="min-width: 650px;">
+                  <thead>
+                    <tr>
+                      <th>ฝ่ายที่รับผิดชอบแก้ไข</th>
+                      <th style="text-align: center;">ทั้งหมด</th>
+                      <th style="text-align: center; color: #d97706;">กำลังดำเนินการ</th>
+                      <th style="text-align: center; color: #059669;">แก้ไขเสร็จสิ้น</th>
+                      <th style="text-align: center; color: #7c3aed;">ส่งต่อ/ประสานงาน</th>
+                      <th style="text-align: center;">ความสำเร็จ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="statsByRespDeptBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
               <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="user-check"></i> สถิติแยกตามผู้รับผิดชอบ (หลังแก้ไข) (Responsible Person/Unit)</h4>
               <div class="table-wrap">
                 <table class="data-table" style="min-width: 650px;">
@@ -326,9 +345,14 @@
             <select name="priority"></select>
           </label>
         </div>
-        <label>ผู้รับผิดชอบ
-          <input type="text" name="assignedTo" placeholder="ชื่อเจ้าหน้าที่หรือหน่วยงาน">
-        </label>
+        <div class="field-grid two">
+          <label>ผู้รับผิดชอบ
+            <input type="text" name="assignedTo" placeholder="ชื่อเจ้าหน้าที่หรือบุคคล">
+          </label>
+          <label>ฝ่ายรับผิดชอบ (หลังแก้ไข)
+            <input type="text" name="respDepartment" placeholder="ชื่อฝ่าย/หน่วยงานแก้ไข">
+          </label>
+        </div>
         <label>สรุปผล/หมายเหตุ
           <textarea name="adminNote" rows="4" placeholder="สรุปวิธีแก้ไข ผลดำเนินการ หรือเหตุผลการยกเลิก"></textarea>
         </label>

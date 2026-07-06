@@ -454,6 +454,7 @@ function openReportDetail(id) {
     ['รายละเอียดปัญหา', report.problem],
     ['วันที่แจ้ง', report.reportDate || report.createdAt],
     ['ผู้รับผิดชอบ', report.assignedTo],
+    ['ฝ่ายรับผิดชอบแก้ไข', report.respDepartment],
     ['ผลดำเนินการ/หมายเหตุ', report.adminNote],
     ['วันที่แก้ไขเสร็จ', report.completedAt]
   ];
@@ -972,7 +973,7 @@ function renderAdminTable() {
       '<td>' + esc(report.category) + '</td>' +
       '<td><div class="row-title">' + esc(report.locationName) + '</div><div class="row-sub">' + esc(report.problem) + '</div></td>' +
       '<td><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></td>' +
-      '<td>' + esc(report.assignedTo || '-') + '</td>' +
+      '<td><strong style="color:var(--ink);">' + esc(report.assignedTo || '-') + '</strong>' + (report.respDepartment ? '<div class="row-sub" style="color:#7c3aed;">' + esc(report.respDepartment) + '</div>' : '') + '</td>' +
       '<td class="action-cell"><button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button></td>' +
     '</tr>';
   }).join('');
@@ -1000,6 +1001,7 @@ function openEdit(id) {
   form.status.value = report.status;
   form.priority.value = report.priority || 'ปกติ';
   form.assignedTo.value = report.assignedTo || '';
+  if (form.respDepartment) form.respDepartment.value = report.respDepartment || '';
   form.adminNote.value = report.adminNote || '';
   form.afterImage.value = '';
   document.getElementById('editTitle').textContent = report.id + ' · ' + report.locationName;
@@ -1276,12 +1278,14 @@ function renderStatsView() {
   let forwarded = 0;
   
   const byDept = {};
+  const byRespDept = {};
   const byResp = {};
   const byCat = {};
   
   reports.forEach(function(r) {
     const status = r.status || 'รับเรื่องแล้ว';
     const dept = r.department || 'ไม่ระบุฝ่าย/หน่วยงาน';
+    const respDept = r.respDepartment || 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข';
     const resp = r.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ';
     const cat = r.category || 'ทั่วไป';
     
@@ -1294,6 +1298,12 @@ function renderStatsView() {
     if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byDept[dept].pending++;
     if (status === 'แก้ไขเสร็จสิ้น') byDept[dept].completed++;
     if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byDept[dept].forwarded++;
+    
+    if (!byRespDept[respDept]) byRespDept[respDept] = { total: 0, pending: 0, completed: 0, forwarded: 0 };
+    byRespDept[respDept].total++;
+    if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byRespDept[respDept].pending++;
+    if (status === 'แก้ไขเสร็จสิ้น') byRespDept[respDept].completed++;
+    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byRespDept[respDept].forwarded++;
     
     if (!byResp[resp]) byResp[resp] = { total: 0, inProgress: 0, completed: 0, forwarded: 0 };
     byResp[resp].total++;
@@ -1317,6 +1327,30 @@ function renderStatsView() {
     } else {
       deptBody.innerHTML = deptKeys.map(function(k) {
         const d = byDept[k];
+        const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
+        let rateColor = '#059669';
+        if (rate < 50) rateColor = '#d97706';
+        if (rate === 0 && d.total > 0) rateColor = '#ef4444';
+        return '<tr>' +
+          '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
+          '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #d97706;">' + d.pending + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
+          '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
+          '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
+          '</tr>';
+      }).join('');
+    }
+  }
+  
+  const respDeptBody = document.getElementById('statsByRespDeptBody');
+  if (respDeptBody) {
+    const rdKeys = Object.keys(byRespDept).sort(function(a, b) { return byRespDept[b].total - byRespDept[a].total; });
+    if (rdKeys.length === 0) {
+      respDeptBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ</td></tr>';
+    } else {
+      respDeptBody.innerHTML = rdKeys.map(function(k) {
+        const d = byRespDept[k];
         const rate = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
         let rateColor = '#059669';
         if (rate < 50) rateColor = '#d97706';
