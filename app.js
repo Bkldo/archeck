@@ -1277,23 +1277,41 @@ function getReportMonthKey(r) {
   // ใช้ reportDate (วันที่รับเรื่อง) เป็นหลัก ถ้าไม่มีใช้ createdAt
   const raw = r.reportDate || r.createdAt || '';
   if (!raw) return null;
-  let d = new Date(raw);
-  if (isNaN(d.getTime())) {
-    // Try DD/MM/YYYY or DD/M/YYYY (Google Sheets display format)
-    const parts = raw.split(/[\/\-\s]/);
-    if (parts.length >= 3) {
-      const day = parseInt(parts[0], 10);
-      const mon = parseInt(parts[1], 10);
-      const yr  = parseInt(parts[2], 10);
-      if (!isNaN(day) && !isNaN(mon) && !isNaN(yr)) {
-        d = new Date(yr < 100 ? 2000 + yr : yr, mon - 1, day);
+
+  // Google Sheets returns dates as "D/M/YYYY, H:MM:SS" (DD/MM/YYYY Thai locale)
+  // DO NOT use new Date(raw) directly — JS parses "3/7/2026" as March 7 (MM/DD), not July 3
+  // Always split manually assuming D/M/YYYY format
+  const parts = raw.split(/[\/,\-\s]+/);
+  let y, m, d;
+
+  if (parts.length >= 3) {
+    const p0 = parseInt(parts[0], 10);
+    const p1 = parseInt(parts[1], 10);
+    const p2 = parseInt(parts[2], 10);
+    if (!isNaN(p0) && !isNaN(p1) && !isNaN(p2)) {
+      if (p2 >= 2000) {
+        // D/M/YYYY  (Google Sheets Thai locale)
+        d = p0; m = p1; y = p2;
+      } else if (p0 >= 2000) {
+        // YYYY/M/D  (ISO-like)
+        y = p0; m = p1; d = p2;
+      } else {
+        // fallback: assume D/M/YY
+        d = p0; m = p1; y = 2000 + p2;
+      }
+      if (m >= 1 && m <= 12 && y >= 2000) {
+        return y + '-' + String(m).padStart(2, '0');
       }
     }
   }
-  if (isNaN(d.getTime())) return null;
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  return y + '-' + String(m).padStart(2, '0');
+
+  // Last resort — try native Date (e.g. ISO 8601 "2026-07-03T07:27:00")
+  const dt = new Date(raw);
+  if (!isNaN(dt.getTime())) {
+    return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
+  }
+
+  return null;
 }
 
 const THAI_MONTHS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
