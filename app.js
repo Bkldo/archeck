@@ -1853,12 +1853,13 @@ function renderStatsView() {
     }).join('');
   }
 
-  function renderRateTable(bodyId, map, labelKey) {
+  function renderRateTable(bodyId, map, hideDuration) {
     const el = document.getElementById(bodyId);
     if (!el) return;
     const keys = Object.keys(map).sort(function(a, b) { return map[b].total - map[a].total; });
+    const cols = hideDuration ? 6 : 7;
     if (keys.length === 0) {
-      el.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
+      el.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
       return;
     }
     el.innerHTML = keys.map(function(k) {
@@ -1877,13 +1878,13 @@ function renderStatsView() {
         '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
         '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
         '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
-        '<td style="text-align: center; color: var(--ink); font-size: 13px; font-weight: 600;">' + esc(durText) + '</td>' +
+        (hideDuration ? '' : ('<td style="text-align: center; color: var(--ink); font-size: 13px; font-weight: 600;">' + esc(durText) + '</td>')) +
         '</tr>';
     }).join('');
   }
 
-  renderRateTable('statsByDepartmentBody', byDept);
-  renderRateTable('statsByRespDeptBody', byRespDept);
+  renderRateTable('statsByDepartmentBody', byDept, true);
+  renderRateTable('statsByRespDeptBody', byRespDept, false);
   
   const respBody = document.getElementById('statsByResponsibleBody');
   if (respBody) {
@@ -1935,3 +1936,8 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
+
+
+
+
+
