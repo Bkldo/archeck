@@ -453,7 +453,9 @@ function openReportDetail(id) {
     ['สถานที่', report.locationName],
     ['รายละเอียดปัญหา', report.problem],
     ['วันที่แจ้ง', report.reportDate || report.createdAt],
-    ['ผู้รับผิดชอบ', report.assignedTo],
+    ['ชื่อผู้แจ้ง', report.reporterName],
+    ['เบอร์โทรศัพท์ผู้แจ้ง', report.phone],
+    ['ผู้รับผิดชอบแก้ไข', report.assignedTo],
     ['ฝ่ายรับผิดชอบแก้ไข', report.respDepartment],
     ['ผลดำเนินการ/หมายเหตุ', report.adminNote],
     ['วันที่แก้ไขเสร็จ', report.completedAt]
@@ -1515,8 +1517,3 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
-
-
-
-
-
