@@ -1551,19 +1551,30 @@ function parseReportTimestamp(raw) {
 }
 
 function getReportResolutionDurationHours(r) {
-  if (!r || r.status !== 'แก้ไขเสร็จสิ้น' || !r.completedAt) return null;
+  var isDone = (r.status === 'แก้ไขเสร็จสิ้น' || r.status === 'ส่งต่อ/ประสานหน่วยงานอื่น');
+  if (!r || !isDone || !r.completedAt) return null;
   if (typeof r.resolutionHours === 'number' && !isNaN(r.resolutionHours)) return r.resolutionHours;
   var startTs = parseReportTimestamp(r.createdAt || r.reportDate);
   var endTs = parseReportTimestamp(r.completedAt);
-  if (!startTs || !endTs || endTs < startTs) return null;
-  return (endTs - startTs) / (1000 * 60 * 60);
+  if (!startTs || !endTs) return null;
+  var diffHours = (endTs - startTs) / (1000 * 60 * 60);
+  if (diffHours < 0) {
+    var startDt = new Date(startTs);
+    var endDt = new Date(endTs);
+    if (startDt.getFullYear() === endDt.getFullYear() && startDt.getMonth() === endDt.getMonth() && startDt.getDate() === endDt.getDate()) {
+      diffHours = 0.5; // ประมาณการ 30 นาที สำหรับรายการที่แก้ไขภายในวันเดียวกันแต่ในตารางชีตไม่มีระบุเวลา
+    } else {
+      return null;
+    }
+  }
+  return diffHours;
 }
 
 function formatDurationHours(hours) {
   if (hours == null || isNaN(hours)) return '-';
   if (hours < 1) {
-    var mins = Math.round(hours * 60);
-    return mins <= 0 ? 'น้อยกว่า 1 นาที' : (mins + ' นาที');
+    var mins = Math.max(1, Math.round(hours * 60));
+    return mins + ' นาที';
   }
   if (hours < 24) {
     var h = Math.floor(hours);
@@ -1576,7 +1587,8 @@ function formatDurationHours(hours) {
 }
 
 function getReportResolutionText(r) {
-  if (!r || r.status !== 'แก้ไขเสร็จสิ้น' || !r.completedAt) return '-';
+  var isDone = (r && (r.status === 'แก้ไขเสร็จสิ้น' || r.status === 'ส่งต่อ/ประสานหน่วยงานอื่น'));
+  if (!isDone || !r.completedAt) return '-';
   if (r.resolutionText) return r.resolutionText;
   var hours = getReportResolutionDurationHours(r);
   return formatDurationHours(hours);
@@ -1760,28 +1772,28 @@ function renderStatsView() {
     if (!byDept[dept]) byDept[dept] = { total: 0, pending: 0, completed: 0, forwarded: 0, durHours: 0, durCount: 0 };
     byDept[dept].total++;
     if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byDept[dept].pending++;
-    if (status === 'แก้ไขเสร็จสิ้น') {
-      byDept[dept].completed++;
+    if (status === 'แก้ไขเสร็จสิ้น' || status === 'ส่งต่อ/ประสานหน่วยงานอื่น') {
+      if (status === 'แก้ไขเสร็จสิ้น') byDept[dept].completed++;
+      if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byDept[dept].forwarded++;
       if (durHours !== null && durHours >= 0) {
         byDept[dept].durHours += durHours;
         byDept[dept].durCount++;
       }
     }
-    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byDept[dept].forwarded++;
     
     if (!byRespDept[respDept]) byRespDept[respDept] = { total: 0, pending: 0, completed: 0, forwarded: 0, durHours: 0, durCount: 0 };
     byRespDept[respDept].total++;
     if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byRespDept[respDept].pending++;
-    if (status === 'แก้ไขเสร็จสิ้น') {
-      byRespDept[respDept].completed++;
+    if (status === 'แก้ไขเสร็จสิ้น' || status === 'ส่งต่อ/ประสานหน่วยงานอื่น') {
+      if (status === 'แก้ไขเสร็จสิ้น') byRespDept[respDept].completed++;
+      if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byRespDept[respDept].forwarded++;
       if (durHours !== null && durHours >= 0) {
         byRespDept[respDept].durHours += durHours;
         byRespDept[respDept].durCount++;
       }
     }
-    if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byRespDept[respDept].forwarded++;
     
-    if (status === 'แก้ไขเสร็จสิ้น' && durHours !== null && durHours >= 0) {
+    if ((status === 'แก้ไขเสร็จสิ้น' || status === 'ส่งต่อ/ประสานหน่วยงานอื่น') && durHours !== null && durHours >= 0) {
       let fDept = String(r.respDepartment || r.department || '').trim();
       if (!fDept || fDept === '-' || fDept === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || fDept === 'ไม่ระบุฝ่าย/หน่วยงาน') {
         fDept = String(r.department || 'ทั่วไป').trim();
@@ -1923,8 +1935,3 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
-
-
-
-
-
