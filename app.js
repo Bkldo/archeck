@@ -479,10 +479,15 @@ function openReportDetail(id) {
     actionsDiv.className = 'detail-actions';
     document.querySelector('#detailModal .modal-card').appendChild(actionsDiv);
   }
+  var actionsHtml = '';
+  if (state.user && state.user.role === 'Administrator') {
+    actionsHtml += '<button class="secondary-button" type="button" style="padding: 10px 18px; border-color:#e53935; color:#e53935;" onclick="closeDetailModal(); deleteReportItem(\'' + escJs(report.id) + '\')"><i data-lucide="trash-2"></i><span>ลบเรื่องนี้</span></button>';
+  }
   if (report.status === 'รับเรื่องแล้ว') {
-    actionsDiv.innerHTML = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px;">' +
-      '<button class="primary-button" type="button" style="padding: 10px 18px;" onclick="closeDetailModal(); openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข / อัปเดตสถานะการแก้ไข</span></button>' +
-      '</div>';
+    actionsHtml += '<button class="primary-button" type="button" style="padding: 10px 18px;" onclick="closeDetailModal(); openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข / อัปเดตสถานะการแก้ไข</span></button>';
+  }
+  if (actionsHtml) {
+    actionsDiv.innerHTML = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">' + actionsHtml + '</div>';
   } else {
     actionsDiv.innerHTML = '';
   }
@@ -996,7 +1001,7 @@ function renderAdminTable() {
       '<td><div class="row-title">' + esc(report.locationName) + '</div><div class="row-sub">' + esc(report.problem) + '</div></td>' +
       '<td><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></td>' +
       '<td><strong style="color:var(--ink);">' + esc(report.assignedTo || '-') + '</strong>' + (report.respDepartment ? '<div class="row-sub" style="color:#7c3aed;">' + esc(report.respDepartment) + '</div>' : '') + '</td>' +
-      '<td class="action-cell"><button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button></td>' +
+      '<td class="action-cell"><button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button>' + (state.user && state.user.role === 'Administrator' ? '<button class="secondary-button" type="button" style="border-color:#e53935;color:#e53935;" onclick="deleteReportItem(\'' + escJs(report.id) + '\')"><i data-lucide="trash-2"></i><span>ลบ</span></button>' : '') + '</td>' +
     '</tr>';
   }).join('');
   if (window.lucide) lucide.createIcons();
@@ -1066,6 +1071,28 @@ function submitEdit(event) {
     .catch(function(err) { hideLoading(); showError(err); })
     .finally(function() { setBusy(button, false); });
 }
+
+function deleteReportItem(id) {
+  if (!checkSessionExpiration()) return;
+  if (!state.user || state.user.role !== 'Administrator') {
+    toast('เฉพาะ Administrator เท่านั้นที่สามารถลบเรื่อง/รายการได้');
+    return;
+  }
+  if (!confirm('คุณต้องการลบเรื่องแจ้งรหัส ' + id + ' ใช่หรือไม่?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้')) return;
+  showLoading('กำลังลบข้อมูล...');
+  serverCall('deleteReport', { token: state.token, reportId: id })
+    .then(function(result) {
+      hideLoading();
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'ลบรายการไม่สำเร็จ');
+      state.adminReports = result.reports || state.adminReports;
+      if (result.publicReports) state.reports = result.publicReports;
+      else state.reports = state.reports.filter(function(item) { return item.id !== id; });
+      renderAll(result.stats || buildLocalStats(state.adminReports));
+      showSuccessPopup(result.message || 'ลบรายการเรียบร้อยแล้ว');
+    })
+    .catch(function(err) { hideLoading(); showError(err); });
+}
+window.deleteReportItem = deleteReportItem;
 
 function openSettings() {
   if (!checkSessionExpiration()) return;
