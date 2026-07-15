@@ -123,12 +123,24 @@
                 <p>รองรับไฟล์ภาพไม่เกิน 10 MB</p>
               </div>
 
+              <div class="geo-picker-field">
+                <label for="geoCodeInput">พิกัด GPS (ละติจูด, ลองจิจูด)
+                  <div class="geo-input-row">
+                    <input id="geoCodeInput" type="text" name="geoCode" placeholder="เช่น 13.756331, 100.501765 (ระบุเองหรือคลิกเลือกบนแผนที่)">
+                    <button id="pickMapButton" class="secondary-button" type="button" title="เลือกตำแหน่งบนแผนที่"><i data-lucide="map-pin"></i><span>เลือกบนแผนที่</span></button>
+                    <button id="geoButton" class="secondary-button" type="button" title="ใช้ตำแหน่งปัจจุบันจากอุปกรณ์"><i data-lucide="crosshair"></i><span>ตำแหน่งปัจจุบัน</span></button>
+                  </div>
+                </label>
+                <div class="geo-status-bar" id="geoStatusBar">
+                  <span id="geoStatusText">💡 พิมพ์เลขพิกัดเอง, เลือกจุดบนแผนที่ หรือคลิกดึงตำแหน่งปัจจุบัน</span>
+                  <a id="geoPreviewLink" href="#" target="_blank" rel="noopener" class="geo-preview-link hidden">📍 เปิดดูบน Google Maps</a>
+                </div>
+              </div>
+
               <input type="hidden" name="geoStamp">
-              <input type="hidden" name="geoCode">
               <input type="hidden" name="geoAddress">
 
-              <div class="form-actions">
-                <button id="geoButton" class="secondary-button" type="button"><i data-lucide="crosshair"></i><span>ใช้ตำแหน่งปัจจุบัน</span></button>
+              <div class="form-actions right">
                 <button class="primary-button" type="submit"><i data-lucide="send"></i><span>ส่งเรื่อง</span></button>
               </div>
             </form>
@@ -471,6 +483,38 @@
           <button class="primary-button" type="submit"><i data-lucide="save"></i><span>บันทึกการตั้งค่า</span></button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="pickLocationModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pickMapTitle">
+    <div class="modal-card map-modal-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Location Picker</p>
+          <h3 id="pickMapTitle">เลือกตำแหน่งบนแผนที่</h3>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">คลิกหรือลากหมุดบนแผนที่เพื่อระบุพิกัดที่พบปัญหา หรือค้นหาชื่อสถานที่</p>
+        </div>
+        <button class="icon-button" data-close-pick-map type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div class="pick-map-toolbar">
+        <div style="flex:1; min-width:220px; display:flex; gap:6px;">
+          <input id="pickMapSearchInput" type="text" placeholder="พิมพ์ชื่อสถานที่, ถนน, ซอย เพื่อค้นหาจุดบนแผนที่...">
+          <button id="pickMapSearchBtn" class="secondary-button" type="button"><i data-lucide="search"></i><span>ค้นหา</span></button>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="pickMapCurrentBtn" class="secondary-button" type="button"><i data-lucide="crosshair"></i><span>ตำแหน่งของฉัน</span></button>
+        </div>
+      </div>
+      <div id="pickLocationMapContainer" class="combined-map-container" style="height:380px;"></div>
+      <div class="modal-footer map-footer" style="justify-content:space-between; align-items:center;">
+        <div id="pickMapSelectedCoords" style="font-weight:600; font-size:14px; color:var(--ink); display:flex; align-items:center; gap:6px;">
+          <i data-lucide="map-pin" style="color:#ef4444;"></i><span>ยังไม่ได้เลือกตำแหน่ง (คลิกบนแผนที่เพื่อปักหมุด)</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="secondary-button" data-close-pick-map type="button">ยกเลิก</button>
+          <button id="confirmPickLocationBtn" class="primary-button" type="button" disabled><i data-lucide="check"></i><span>ยืนยันพิกัดนี้</span></button>
+        </div>
+      </div>
     </div>
   </div>
 
