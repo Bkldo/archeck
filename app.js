@@ -412,6 +412,7 @@ function renderReportCard(report) {
       '<p>' + esc(report.problem) + '</p>' +
       '<p><strong>' + esc(report.id) + '</strong> · ' + esc(report.category) + '</p>' +
       (report.adminNote ? '<p>ผลดำเนินการ: ' + esc(report.adminNote) + '</p>' : '') +
+      (report.status === 'รับเรื่องแล้ว' ? '<div style="margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--line);"><button class="secondary-button" type="button" style="width: 100%; justify-content: center; border-color: #2e7d32; color: #2e7d32; font-weight: 600;" onclick="event.stopPropagation(); openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข / อัปเดตสถานะการแก้ไข</span></button></div>' : '') +
     '</div></article>';
 }
 
@@ -436,6 +437,7 @@ function openReportDetail(id) {
       '<button class="icon-button" type="button" aria-label="ปิด" onclick="closeDetailModal()"><i data-lucide="x"></i></button></div>' +
       '<div id="detailImages" class="detail-images"></div>' +
       '<div id="detailBody" class="detail-body"></div>' +
+      '<div id="detailActions" class="detail-actions"></div>' +
       '</div>';
     document.body.appendChild(modal);
   }
@@ -470,6 +472,20 @@ function openReportDetail(id) {
   });
   bodyHtml += '</dl>';
   document.getElementById('detailBody').innerHTML = bodyHtml;
+  var actionsDiv = document.getElementById('detailActions');
+  if (!actionsDiv) {
+    actionsDiv = document.createElement('div');
+    actionsDiv.id = 'detailActions';
+    actionsDiv.className = 'detail-actions';
+    document.querySelector('#detailModal .modal-card').appendChild(actionsDiv);
+  }
+  if (report.status === 'รับเรื่องแล้ว') {
+    actionsDiv.innerHTML = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px;">' +
+      '<button class="primary-button" type="button" style="padding: 10px 18px;" onclick="closeDetailModal(); openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข / อัปเดตสถานะการแก้ไข</span></button>' +
+      '</div>';
+  } else {
+    actionsDiv.innerHTML = '';
+  }
   modal.classList.remove('hidden');
   if (window.lucide) lucide.createIcons();
 }
@@ -988,7 +1004,14 @@ function renderAdminTable() {
 
 function openEdit(id) {
   if (!checkSessionExpiration()) return;
-  const report = state.adminReports.find(function(item) { return item.id === id; });
+  if (!state.token) {
+    window.__INITIAL_EDIT__ = id;
+    toast('กรุณาเข้าสู่ระบบผู้ดูแลระบบเพื่อทำการแก้ไขข้อมูล');
+    showView('adminView');
+    return;
+  }
+  var report = state.adminReports.find(function(item) { return item.id === id; });
+  if (!report && state.reports.length) report = state.reports.find(function(item) { return item.id === id; });
   if (!report) {
     toast('ไม่พบข้อมูลเรื่องแจ้งรหัส ' + id);
     return;
