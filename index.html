@@ -314,11 +314,23 @@
             </div>
           </div>
 
+          <div class="top-performers-section" style="margin-bottom: 24px;">
+            <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h4 style="margin: 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="trophy"></i> 3 อันดับฝ่ายที่ใช้เวลาแก้ไขเรื่องน้อยที่สุด (Top 3 Fastest Resolving Departments)</h4>
+                <p style="margin: 4px 0 0; color: var(--muted); font-size: 13px;">คำนวณระยะเวลาเฉลี่ยตั้งแต่วันที่รับเรื่องจนถึงวันที่บันทึกแก้ไขเสร็จสิ้น</p>
+              </div>
+            </div>
+            <div id="statsTopFastestContainer" class="top-fastest-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
           <div style="display: grid; gap: 24px;">
             <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
               <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="building-2"></i> สถิติแยกตามฝ่ายที่แจ้ง (Reporter Department)</h4>
               <div class="table-wrap">
-                <table class="data-table" style="min-width: 650px;">
+                <table class="data-table" style="min-width: 720px;">
                   <thead>
                     <tr>
                       <th>ฝ่ายที่แจ้ง / หน่วยงาน</th>
@@ -327,6 +339,7 @@
                       <th style="text-align: center; color: #059669;">แก้ไขเสร็จสิ้น</th>
                       <th style="text-align: center; color: #7c3aed;">ส่งต่อ/ประสานงาน</th>
                       <th style="text-align: center;">อัตราสำเร็จ</th>
+                      <th style="text-align: center;">เฉลี่ยเวลาแก้ไข</th>
                     </tr>
                   </thead>
                   <tbody id="statsByDepartmentBody"></tbody>
@@ -337,7 +350,7 @@
             <div class="panel" style="background: #fff; padding: 18px; border: 1px solid var(--line);">
               <h4 style="margin: 0 0 14px 0; font-size: 17px; color: var(--brand-dark); display: flex; align-items: center; gap: 8px;"><i data-lucide="building"></i> สถิติแยกตามฝ่ายที่รับผิดชอบ (หลังแก้ไข) (Responsible Department)</h4>
               <div class="table-wrap">
-                <table class="data-table" style="min-width: 650px;">
+                <table class="data-table" style="min-width: 720px;">
                   <thead>
                     <tr>
                       <th>ฝ่ายที่รับผิดชอบแก้ไข</th>
@@ -346,6 +359,7 @@
                       <th style="text-align: center; color: #059669;">แก้ไขเสร็จสิ้น</th>
                       <th style="text-align: center; color: #7c3aed;">ส่งต่อ/ประสานงาน</th>
                       <th style="text-align: center;">ความสำเร็จ</th>
+                      <th style="text-align: center;">เฉลี่ยเวลาแก้ไข</th>
                     </tr>
                   </thead>
                   <tbody id="statsByRespDeptBody"></tbody>

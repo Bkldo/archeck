@@ -796,6 +796,109 @@ td { line-height: 1.45; }
   border-radius: 8px;
 }
 
+/* Top Fastest Resolving Departments Cards */
+.top-fastest-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .top-fastest-grid { grid-template-columns: 1fr; }
+}
+.fastest-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  position: relative;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.fastest-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.fastest-card.rank-1 {
+  border-top: 4px solid #f59e0b;
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 40%);
+}
+.fastest-card.rank-2 {
+  border-top: 4px solid #94a3b8;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 40%);
+}
+.fastest-card.rank-3 {
+  border-top: 4px solid #d97706;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 40%);
+}
+.fastest-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fastest-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rank-1 .fastest-rank-badge {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.rank-2 .fastest-rank-badge {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.rank-3 .fastest-rank-badge {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+.fastest-dept-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0;
+}
+.fastest-time-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 4px;
+}
+.fastest-time-num {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+.rank-1 .fastest-time-num { color: #d97706; }
+.rank-2 .fastest-time-num { color: #475569; }
+.rank-3 .fastest-time-num { color: #b45309; }
+.fastest-time-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.fastest-meta {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
 @media (max-width: 1100px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar {
@@ -838,4 +941,5 @@ td { line-height: 1.45; }
   .pick-map-toolbar { flex-direction: column; align-items: stretch; }
   .pick-map-toolbar > div { width: 100%; flex-direction: column; }
   .pick-map-toolbar input, .pick-map-toolbar button { width: 100%; }
+  .top-fastest-grid { grid-template-columns: 1fr; }
 }

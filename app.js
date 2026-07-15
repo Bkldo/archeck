@@ -481,7 +481,8 @@ function openReportDetail(id) {
     ['ผู้รับผิดชอบแก้ไข', report.assignedTo],
     ['ฝ่ายรับผิดชอบแก้ไข', report.respDepartment],
     ['ผลดำเนินการ/หมายเหตุ', report.adminNote],
-    ['วันที่แก้ไขเสร็จ', report.completedAt]
+    ['วันที่แก้ไขเสร็จ', report.completedAt],
+    ['ระยะเวลาในการแก้ไข', getReportResolutionText(report)]
   ];
   if (report.geoAddress) fields.push(['พิกัด/แผนที่', '<a href="' + escAttr(report.geoAddress) + '" target="_blank" rel="noopener">เปิดแผนที่</a>']);
   var bodyHtml = '<dl class="detail-fields">';
@@ -1513,6 +1514,74 @@ function updateLoadingMessage(message) {
   }
 }
 
+function parseReportTimestamp(raw) {
+  if (!raw) return null;
+  if (Object.prototype.toString.call(raw) === '[object Date]' && !isNaN(raw.getTime())) return raw.getTime();
+  var str = String(raw).trim();
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    var dt = new Date(str);
+    if (!isNaN(dt.getTime())) return dt.getTime();
+  }
+  var parts = str.split(/[\/,\-\s:]+/).filter(Boolean);
+  if (parts.length >= 3) {
+    var p0 = parseInt(parts[0], 10);
+    var p1 = parseInt(parts[1], 10);
+    var p2 = parseInt(parts[2], 10);
+    if (!isNaN(p0) && !isNaN(p1) && !isNaN(p2)) {
+      var y, m, d;
+      if (p2 >= 2000 || p2 > 31) {
+        d = p0; m = p1; y = p2 < 100 ? 2000 + p2 : p2;
+      } else if (p0 >= 2000 || p0 > 31) {
+        y = p0 < 100 ? 2000 + p0 : p0; m = p1; d = p2;
+      } else {
+        d = p0; m = p1; y = p2 < 100 ? 2000 + p2 : p2;
+      }
+      var hr = parts.length >= 4 ? parseInt(parts[3], 10) || 0 : 0;
+      var min = parts.length >= 5 ? parseInt(parts[4], 10) || 0 : 0;
+      var sec = parts.length >= 6 ? parseInt(parts[5], 10) || 0 : 0;
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        return new Date(y, m - 1, d, hr, min, sec).getTime();
+      }
+    }
+  }
+  var fallback = new Date(str);
+  if (!isNaN(fallback.getTime())) return fallback.getTime();
+  return null;
+}
+
+function getReportResolutionDurationHours(r) {
+  if (!r || r.status !== 'แก้ไขเสร็จสิ้น' || !r.completedAt) return null;
+  if (typeof r.resolutionHours === 'number' && !isNaN(r.resolutionHours)) return r.resolutionHours;
+  var startTs = parseReportTimestamp(r.createdAt || r.reportDate);
+  var endTs = parseReportTimestamp(r.completedAt);
+  if (!startTs || !endTs || endTs < startTs) return null;
+  return (endTs - startTs) / (1000 * 60 * 60);
+}
+
+function formatDurationHours(hours) {
+  if (hours == null || isNaN(hours)) return '-';
+  if (hours < 1) {
+    var mins = Math.round(hours * 60);
+    return mins <= 0 ? 'น้อยกว่า 1 นาที' : (mins + ' นาที');
+  }
+  if (hours < 24) {
+    var h = Math.floor(hours);
+    var m = Math.round((hours - h) * 60);
+    return m > 0 ? (h + ' ชม. ' + m + ' นาที') : (h + ' ชั่วโมง');
+  }
+  var days = Math.floor(hours / 24);
+  var remHours = Math.round(hours % 24);
+  return remHours > 0 ? (days + ' วัน ' + remHours + ' ชม.') : (days + ' วัน');
+}
+
+function getReportResolutionText(r) {
+  if (!r || r.status !== 'แก้ไขเสร็จสิ้น' || !r.completedAt) return '-';
+  if (r.resolutionText) return r.resolutionText;
+  var hours = getReportResolutionDurationHours(r);
+  return formatDurationHours(hours);
+}
+
 function hideLoading() {
   clearInterval(showLoading._timer);
   var overlay = document.getElementById('loadingOverlay');
@@ -1562,13 +1631,9 @@ function escAttr(value) { return esc(value).replace(/'/g, '&#39;'); }
 function escJs(value) { return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function getReportMonthKey(r) {
-  // ใช้ reportDate (วันที่รับเรื่อง) เป็นหลัก ถ้าไม่มีใช้ createdAt
   const raw = r.reportDate || r.createdAt || '';
   if (!raw) return null;
 
-  // Google Sheets returns dates as "D/M/YYYY, H:MM:SS" (DD/MM/YYYY Thai locale)
-  // DO NOT use new Date(raw) directly — JS parses "3/7/2026" as March 7 (MM/DD), not July 3
-  // Always split manually assuming D/M/YYYY format
   const parts = raw.split(/[\/,\-\s]+/);
   let y, m, d;
 
@@ -1578,13 +1643,10 @@ function getReportMonthKey(r) {
     const p2 = parseInt(parts[2], 10);
     if (!isNaN(p0) && !isNaN(p1) && !isNaN(p2)) {
       if (p2 >= 2000) {
-        // D/M/YYYY  (Google Sheets Thai locale)
         d = p0; m = p1; y = p2;
       } else if (p0 >= 2000) {
-        // YYYY/M/D  (ISO-like)
         y = p0; m = p1; d = p2;
       } else {
-        // fallback: assume D/M/YY
         d = p0; m = p1; y = 2000 + p2;
       }
       if (m >= 1 && m <= 12 && y >= 2000) {
@@ -1593,7 +1655,6 @@ function getReportMonthKey(r) {
     }
   }
 
-  // Last resort — try native Date (e.g. ISO 8601 "2026-07-03T07:27:00")
   const dt = new Date(raw);
   if (!isNaN(dt.getTime())) {
     return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0');
@@ -1682,6 +1743,7 @@ function renderStatsView() {
   const byRespDept = {};
   const byResp = {};
   const byCat = {};
+  const fastestMap = {};
   
   reports.forEach(function(r) {
     const status = r.status || 'รับเรื่องแล้ว';
@@ -1689,22 +1751,47 @@ function renderStatsView() {
     const respDept = r.respDepartment || 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข';
     const resp = r.assignedTo || 'ยังไม่ระบุผู้รับผิดชอบ';
     const cat = r.category || 'ทั่วไป';
+    const durHours = getReportResolutionDurationHours(r);
     
     if (status === 'รับเรื่องแล้ว') receivedCount++;
     if (status === 'กำลังดำเนินการ') inProgressCount++;
     if (status === 'แก้ไขเสร็จสิ้น' || status === 'ส่งต่อ/ประสานหน่วยงานอื่น') completedCount++;
     
-    if (!byDept[dept]) byDept[dept] = { total: 0, pending: 0, completed: 0, forwarded: 0 };
+    if (!byDept[dept]) byDept[dept] = { total: 0, pending: 0, completed: 0, forwarded: 0, durHours: 0, durCount: 0 };
     byDept[dept].total++;
     if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byDept[dept].pending++;
-    if (status === 'แก้ไขเสร็จสิ้น') byDept[dept].completed++;
+    if (status === 'แก้ไขเสร็จสิ้น') {
+      byDept[dept].completed++;
+      if (durHours !== null && durHours >= 0) {
+        byDept[dept].durHours += durHours;
+        byDept[dept].durCount++;
+      }
+    }
     if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byDept[dept].forwarded++;
     
-    if (!byRespDept[respDept]) byRespDept[respDept] = { total: 0, pending: 0, completed: 0, forwarded: 0 };
+    if (!byRespDept[respDept]) byRespDept[respDept] = { total: 0, pending: 0, completed: 0, forwarded: 0, durHours: 0, durCount: 0 };
     byRespDept[respDept].total++;
     if (status === 'รับเรื่องแล้ว' || status === 'กำลังดำเนินการ') byRespDept[respDept].pending++;
-    if (status === 'แก้ไขเสร็จสิ้น') byRespDept[respDept].completed++;
+    if (status === 'แก้ไขเสร็จสิ้น') {
+      byRespDept[respDept].completed++;
+      if (durHours !== null && durHours >= 0) {
+        byRespDept[respDept].durHours += durHours;
+        byRespDept[respDept].durCount++;
+      }
+    }
     if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byRespDept[respDept].forwarded++;
+    
+    if (status === 'แก้ไขเสร็จสิ้น' && durHours !== null && durHours >= 0) {
+      let fDept = String(r.respDepartment || r.department || '').trim();
+      if (!fDept || fDept === '-' || fDept === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || fDept === 'ไม่ระบุฝ่าย/หน่วยงาน') {
+        fDept = String(r.department || 'ทั่วไป').trim();
+      }
+      if (fDept && fDept !== '-' && fDept !== 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' && fDept !== 'ไม่ระบุฝ่าย/หน่วยงาน') {
+        if (!fastestMap[fDept]) fastestMap[fDept] = { totalHours: 0, count: 0 };
+        fastestMap[fDept].totalHours += durHours;
+        fastestMap[fDept].count++;
+      }
+    }
     
     if (!byResp[resp]) byResp[resp] = { total: 0, inProgress: 0, completed: 0, forwarded: 0 };
     byResp[resp].total++;
@@ -1720,12 +1807,46 @@ function renderStatsView() {
   setText('statsInProgressCount', inProgressCount);
   setText('statsCompletedCount', completedCount);
 
+  const fastestContainer = document.getElementById('statsTopFastestContainer');
+  if (fastestContainer) {
+    const sortedDepts = Object.keys(fastestMap).map(function(k) {
+      const item = fastestMap[k];
+      return { name: k, avgHours: item.totalHours / item.count, count: item.count };
+    }).sort(function(a, b) { return a.avgHours - b.avgHours; });
+    
+    const rankConfigs = [
+      { rank: 1, label: 'อันดับ 1 (Gold)', badge: '🏆 อันดับ 1 - GOLD', cls: 'rank-1' },
+      { rank: 2, label: 'อันดับ 2 (Silver)', badge: '🥈 อันดับ 2 - SILVER', cls: 'rank-2' },
+      { rank: 3, label: 'อันดับ 3 (Bronze)', badge: '🥉 อันดับ 3 - BRONZE', cls: 'rank-3' }
+    ];
+    
+    fastestContainer.innerHTML = rankConfigs.map(function(rc, idx) {
+      const d = sortedDepts[idx];
+      const name = d ? d.name : 'ยังไม่มีข้อมูลในอันดับนี้';
+      const timeStr = d ? formatDurationHours(d.avgHours) : '-';
+      const metaStr = d ? ('แก้ไขเสร็จแล้ว ' + d.count + ' เรื่อง') : 'รอการบันทึกแก้ไขเสร็จสิ้น';
+      return '<div class="fastest-card ' + rc.cls + '">' +
+        '<div class="fastest-card-header">' +
+          '<span class="fastest-rank-badge">' + rc.badge + '</span>' +
+        '</div>' +
+        '<h5 class="fastest-dept-name">' + esc(name) + '</h5>' +
+        '<div class="fastest-time-stat">' +
+          '<span class="fastest-time-num">' + esc(timeStr) + '</span>' +
+        '</div>' +
+        '<div class="fastest-meta">' +
+          '<span>ระยะเวลาเฉลี่ย/เรื่อง</span>' +
+          '<span style="font-weight: 600; color: var(--ink);">' + esc(metaStr) + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
   function renderRateTable(bodyId, map, labelKey) {
     const el = document.getElementById(bodyId);
     if (!el) return;
     const keys = Object.keys(map).sort(function(a, b) { return map[b].total - map[a].total; });
     if (keys.length === 0) {
-      el.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
+      el.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--muted);">ยังไม่มีข้อมูลสถิติ' + (filterKey !== 'all' ? 'ในเดือนที่เลือก' : '') + '</td></tr>';
       return;
     }
     el.innerHTML = keys.map(function(k) {
@@ -1735,6 +1856,8 @@ function renderStatsView() {
       let rateColor = '#059669';
       if (rate < 50) rateColor = '#d97706';
       if (rate === 0 && d.total > 0) rateColor = '#ef4444';
+      const avgDur = d.durCount > 0 ? (d.durHours / d.durCount) : null;
+      const durText = formatDurationHours(avgDur);
       return '<tr>' +
         '<td class="row-title" style="color: var(--ink);">' + esc(k) + '</td>' +
         '<td style="text-align: center; font-weight: 700;">' + d.total + '</td>' +
@@ -1742,6 +1865,7 @@ function renderStatsView() {
         '<td style="text-align: center; font-weight: 600; color: #059669;">' + d.completed + '</td>' +
         '<td style="text-align: center; font-weight: 600; color: #7c3aed;">' + d.forwarded + '</td>' +
         '<td style="text-align: center;"><span style="font-weight:700; color:' + rateColor + '; background:' + (rate === 100 ? '#dcfce7' : '#f1f5f9') + '; padding: 2px 8px; border-radius: 999px; font-size: 12px;">' + rate + '%</span></td>' +
+        '<td style="text-align: center; color: var(--ink); font-size: 13px; font-weight: 600;">' + esc(durText) + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -1799,3 +1923,8 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
+
+
+
+
+
