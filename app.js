@@ -294,6 +294,27 @@ function setupForms() {
   document.getElementById('editForm').addEventListener('submit', submitEdit);
   document.getElementById('settingsForm').addEventListener('submit', submitSettings);
   document.getElementById('geoButton').addEventListener('click', captureLocation);
+  var pickMapBtn = document.getElementById('pickMapButton');
+  if (pickMapBtn) pickMapBtn.addEventListener('click', openPickLocationModal);
+  document.querySelectorAll('[data-close-pick-map]').forEach(function(button) { button.addEventListener('click', closePickLocationModal); });
+  var confirmPickBtn = document.getElementById('confirmPickLocationBtn');
+  if (confirmPickBtn) confirmPickBtn.addEventListener('click', confirmPickLocation);
+  var pickSearchBtn = document.getElementById('pickMapSearchBtn');
+  if (pickSearchBtn) pickSearchBtn.addEventListener('click', searchPickLocation);
+  var pickSearchInput = document.getElementById('pickMapSearchInput');
+  if (pickSearchInput) {
+    pickSearchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); searchPickLocation(); }
+    });
+  }
+  var pickCurrentBtn = document.getElementById('pickMapCurrentBtn');
+  if (pickCurrentBtn) pickCurrentBtn.addEventListener('click', locatePickLocationCurrent);
+  var geoInput = document.getElementById('geoCodeInput');
+  if (geoInput) {
+    var onGeoChange = function() { updateGeoStatusDisplay(geoInput.value); };
+    geoInput.addEventListener('input', onGeoChange);
+    geoInput.addEventListener('change', onGeoChange);
+  }
   document.getElementById('logoutButton').addEventListener('click', logoutAdmin);
   document.getElementById('settingsButton').addEventListener('click', openSettings);
   document.querySelectorAll('[data-close-modal]').forEach(function(button) { button.addEventListener('click', closeEditModal); });
@@ -865,6 +886,16 @@ function submitReport(event) {
   event.preventDefault();
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
+  const geoInput = form.querySelector('#geoCodeInput');
+  if (geoInput && geoInput.value) {
+    const coords = parseCoordsString(geoInput.value);
+    if (coords) {
+      const cleanCoords = coords.lat.toFixed(6) + ',' + coords.lng.toFixed(6);
+      geoInput.value = cleanCoords;
+      if (form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + cleanCoords;
+      if (form.geoStamp && !form.geoStamp.value) form.geoStamp.value = new Date().toISOString();
+    }
+  }
   setBusy(button, true);
   showLoading('กำลังเตรียมข้อมูล...');
   serverCall('createReport', form)
@@ -874,6 +905,7 @@ function submitReport(event) {
       state.reports = result.reports || state.reports;
       renderAll(result.stats || buildLocalStats(state.reports));
       form.reset();
+      updateGeoStatusDisplay('');
       setDefaultDate();
       showSuccessPopup(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย\nเลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย');
       showView('trackView');
@@ -892,14 +924,214 @@ function captureLocation() {
   navigator.geolocation.getCurrentPosition(function(pos) {
     const coords = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
     const form = document.getElementById('reportForm');
-    form.geoStamp.value = new Date().toISOString();
-    form.geoCode.value = coords;
-    form.geoAddress.value = 'https://www.google.com/maps?q=' + coords;
+    if (form && form.geoStamp) form.geoStamp.value = new Date().toISOString();
+    if (form && form.geoCode) form.geoCode.value = coords;
+    if (form && form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + coords;
+    updateGeoStatusDisplay(coords);
     toast('บันทึกพิกัดปัจจุบันแล้ว');
     setBusy(button, false);
   }, function(error) {
     toast(error.message || 'ไม่สามารถดึงตำแหน่งได้', true);
     setBusy(button, false);
+  }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+}
+
+function parseCoordsString(str) {
+  if (!str) return null;
+  var match = String(str).match(/(-?\d{1,2}\.\d{2,8})\s*,\s*(-?\d{1,3}\.\d{2,8})/);
+  if (!match) return null;
+  var lat = parseFloat(match[1]);
+  var lng = parseFloat(match[2]);
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180 || (lat === 0 && lng === 0)) return null;
+  return { lat: lat, lng: lng };
+}
+
+function updateGeoStatusDisplay(valueString) {
+  const statusText = document.getElementById('geoStatusText');
+  const previewLink = document.getElementById('geoPreviewLink');
+  const form = document.getElementById('reportForm');
+  const coords = parseCoordsString(valueString);
+  
+  if (coords) {
+    const cleanCoords = coords.lat.toFixed(6) + ',' + coords.lng.toFixed(6);
+    if (form && form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + cleanCoords;
+    if (form && form.geoStamp && !form.geoStamp.value) form.geoStamp.value = new Date().toISOString();
+    if (statusText) {
+      statusText.innerHTML = '✅ พร้อมบันทึกพิกัด: <strong>' + cleanCoords + '</strong>';
+      statusText.style.color = '#15803d';
+    }
+    if (previewLink) {
+      previewLink.href = 'https://www.google.com/maps?q=' + cleanCoords;
+      previewLink.classList.remove('hidden');
+    }
+  } else {
+    if (form && form.geoAddress) form.geoAddress.value = '';
+    if (form && form.geoStamp) form.geoStamp.value = '';
+    if (statusText) {
+      statusText.innerHTML = '💡 พิมพ์เลขพิกัดเอง, เลือกจุดบนแผนที่ หรือคลิกดึงตำแหน่งปัจจุบัน';
+      statusText.style.color = 'var(--muted)';
+    }
+    if (previewLink) {
+      previewLink.href = '#';
+      previewLink.classList.add('hidden');
+    }
+  }
+}
+
+var pickLocationMapInstance = null;
+var pickLocationMarker = null;
+var currentPickedCoords = null;
+
+function setPickedCoords(lat, lng) {
+  currentPickedCoords = { lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) };
+  if (pickLocationMarker) {
+    pickLocationMarker.setLatLng([currentPickedCoords.lat, currentPickedCoords.lng]);
+  } else if (pickLocationMapInstance) {
+    pickLocationMarker = L.marker([currentPickedCoords.lat, currentPickedCoords.lng], { draggable: true }).addTo(pickLocationMapInstance);
+    pickLocationMarker.on('dragend', function(e) {
+      var pos = e.target.getLatLng();
+      setPickedCoords(pos.lat, pos.lng);
+    });
+  }
+  var coordsEl = document.getElementById('pickMapSelectedCoords');
+  if (coordsEl) {
+    coordsEl.innerHTML = '<i data-lucide="map-pin" style="color:#10b981;"></i><span>📍 พิกัดที่เลือก: <strong>' + currentPickedCoords.lat.toFixed(6) + ', ' + currentPickedCoords.lng.toFixed(6) + '</strong></span>';
+    if (window.lucide) lucide.createIcons();
+  }
+  var confirmBtn = document.getElementById('confirmPickLocationBtn');
+  if (confirmBtn) confirmBtn.disabled = false;
+}
+
+function openPickLocationModal() {
+  if (typeof L === 'undefined') {
+    toast('ไม่สามารถโหลดแผนที่ได้ สามารถระบุพิกัดโดยการพิมพ์ในช่องข้อความได้โดยตรง', true);
+    return;
+  }
+  var modal = document.getElementById('pickLocationModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  
+  var initialLat = 13.756331;
+  var initialLng = 100.501765;
+  var existingInput = document.getElementById('geoCodeInput');
+  var existingCoords = parseCoordsString(existingInput ? existingInput.value : '');
+  if (existingCoords) {
+    initialLat = existingCoords.lat;
+    initialLng = existingCoords.lng;
+  }
+  
+  setTimeout(function() {
+    if (!pickLocationMapInstance) {
+      var container = document.getElementById('pickLocationMapContainer');
+      if (container) {
+        pickLocationMapInstance = L.map('pickLocationMapContainer', { zoomControl: false }).setView([initialLat, initialLng], 14);
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&hl=th&x={x}&y={y}&z={z}', {
+          maxZoom: 20,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '&copy; Google Maps'
+        }).addTo(pickLocationMapInstance);
+        
+        L.control.zoom({ position: 'bottomright' }).addTo(pickLocationMapInstance);
+        
+        pickLocationMapInstance.on('click', function(e) {
+          setPickedCoords(e.latlng.lat, e.latlng.lng);
+        });
+      }
+    } else {
+      pickLocationMapInstance.setView([initialLat, initialLng], 14);
+    }
+    
+    if (pickLocationMapInstance) {
+      pickLocationMapInstance.invalidateSize();
+      if (existingCoords) {
+        setPickedCoords(existingCoords.lat, existingCoords.lng);
+      } else {
+        currentPickedCoords = null;
+        if (pickLocationMarker && pickLocationMapInstance.hasLayer(pickLocationMarker)) {
+          pickLocationMapInstance.removeLayer(pickLocationMarker);
+          pickLocationMarker = null;
+        }
+        var coordsEl = document.getElementById('pickMapSelectedCoords');
+        if (coordsEl) {
+          coordsEl.innerHTML = '<i data-lucide="map-pin" style="color:#ef4444;"></i><span>ยังไม่ได้เลือกตำแหน่ง (คลิกบนแผนที่เพื่อปักหมุด)</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+        var confirmBtn = document.getElementById('confirmPickLocationBtn');
+        if (confirmBtn) confirmBtn.disabled = true;
+      }
+    }
+    if (window.lucide) lucide.createIcons();
+  }, 150);
+}
+window.openPickLocationModal = openPickLocationModal;
+
+function closePickLocationModal() {
+  var modal = document.getElementById('pickLocationModal');
+  if (modal) modal.classList.add('hidden');
+}
+window.closePickLocationModal = closePickLocationModal;
+
+function confirmPickLocation() {
+  if (!currentPickedCoords) return;
+  const coordsStr = currentPickedCoords.lat.toFixed(6) + ',' + currentPickedCoords.lng.toFixed(6);
+  const geoInput = document.getElementById('geoCodeInput');
+  const form = document.getElementById('reportForm');
+  if (geoInput) geoInput.value = coordsStr;
+  if (form && form.geoCode) form.geoCode.value = coordsStr;
+  if (form && form.geoStamp) form.geoStamp.value = new Date().toISOString();
+  if (form && form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + coordsStr;
+  updateGeoStatusDisplay(coordsStr);
+  toast('บันทึกพิกัดจากแผนที่เรียบร้อย');
+  closePickLocationModal();
+}
+
+function searchPickLocation() {
+  var inputEl = document.getElementById('pickMapSearchInput');
+  var query = (inputEl ? inputEl.value : '').trim();
+  if (!query) {
+    toast('กรุณาพิมพ์ชื่อสถานที่ที่ต้องการค้นหา', true);
+    return;
+  }
+  var btn = document.getElementById('pickMapSearchBtn');
+  setBusy(btn, true);
+  fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query + ' ประเทศไทย'))
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data && data.length > 0) {
+        var lat = parseFloat(data[0].lat);
+        var lon = parseFloat(data[0].lon);
+        if (pickLocationMapInstance) {
+          pickLocationMapInstance.setView([lat, lon], 16);
+          setPickedCoords(lat, lon);
+        }
+      } else {
+        toast('ไม่พบตำแหน่งที่ค้นหา กรุณาลองคำค้นอื่นหรือคลิกเลือกบนแผนที่', true);
+      }
+    })
+    .catch(function() {
+      toast('ไม่สามารถค้นหาตำแหน่งได้ในขณะนี้ กรุณาคลิกเลือกบนแผนที่โดยตรง', true);
+    })
+    .finally(function() { setBusy(btn, false); });
+}
+
+function locatePickLocationCurrent() {
+  var btn = document.getElementById('pickMapCurrentBtn');
+  if (!navigator.geolocation) {
+    toast('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง', true);
+    return;
+  }
+  setBusy(btn, true);
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    var lat = pos.coords.latitude;
+    var lng = pos.coords.longitude;
+    if (pickLocationMapInstance) {
+      pickLocationMapInstance.setView([lat, lng], 16);
+      setPickedCoords(lat, lng);
+    }
+    setBusy(btn, false);
+  }, function(error) {
+    toast(error.message || 'ไม่สามารถดึงตำแหน่งได้', true);
+    setBusy(btn, false);
   }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
 }
 
