@@ -1826,6 +1826,97 @@ function renderStatsView() {
       return { name: k, avgHours: item.totalHours / item.count, count: item.count };
     }).sort(function(a, b) { return a.avgHours - b.avgHours; });
     
+    function getMedalSvg(rank) {
+      if (rank === 1) {
+        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+          '<defs>' +
+            '<linearGradient id="m1_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
+            '<linearGradient id="m1_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m1_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="35%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#9a3412"/></linearGradient>' +
+            '<linearGradient id="m1_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fde047"/><stop offset="100%" stop-color="#d97706"/></linearGradient>' +
+            '<filter id="m1_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+          '</defs>' +
+          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m1_ribbonL)" filter="url(#m1_shadow)"/>' +
+          '<path d="M24 119 L41 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
+          '<path d="M40 123 L52 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
+          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m1_ribbonR)" filter="url(#m1_shadow)"/>' +
+          '<path d="M76 123 L64 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
+          '<path d="M92 119 L75 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
+          '<g filter="url(#m1_shadow)">' +
+            '<circle cx="58" cy="52" r="46" fill="url(#m1_coinOut)"/>' +
+            '<circle cx="58" cy="52" r="43.5" fill="#ca8a04" stroke="#fef08a" stroke-width="1.2"/>' +
+            '<circle cx="58" cy="52" r="37" fill="url(#m1_coinIn)"/>' +
+            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#fef9c3" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+          '</g>' +
+          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#fffbeb" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#fffbeb" opacity="0.95"/>' +
+          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#fffbeb" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#fffbeb" opacity="0.95"/>' +
+          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">1</text>' +
+          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#fffbeb" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">GOLD</text>' +
+          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.38" style="filter: blur(1.5px)"/>' +
+        '</svg>';
+      } else if (rank === 2) {
+        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+          '<defs>' +
+            '<linearGradient id="m2_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
+            '<linearGradient id="m2_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m2_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#475569"/></linearGradient>' +
+            '<linearGradient id="m2_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#94a3b8"/></linearGradient>' +
+            '<filter id="m2_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+          '</defs>' +
+          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m2_ribbonL)" filter="url(#m2_shadow)"/>' +
+          '<path d="M24 119 L41 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M40 123 L52 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m2_ribbonR)" filter="url(#m2_shadow)"/>' +
+          '<path d="M76 123 L64 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M92 119 L75 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
+          '<g filter="url(#m2_shadow)">' +
+            '<circle cx="58" cy="52" r="46" fill="url(#m2_coinOut)"/>' +
+            '<circle cx="58" cy="52" r="43.5" fill="#64748b" stroke="#f1f5f9" stroke-width="1.2"/>' +
+            '<circle cx="58" cy="52" r="37" fill="url(#m2_coinIn)"/>' +
+            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+          '</g>' +
+          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#f8fafc" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#f8fafc" opacity="0.95"/>' +
+          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#f8fafc" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#f8fafc" opacity="0.95"/>' +
+          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">2</text>' +
+          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#f8fafc" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">SILVER</text>' +
+          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.4" style="filter: blur(1.5px)"/>' +
+        '</svg>';
+      } else {
+        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+          '<defs>' +
+            '<linearGradient id="m3_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
+            '<linearGradient id="m3_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m3_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffedd5"/><stop offset="35%" stop-color="#ea580c"/><stop offset="100%" stop-color="#7c2d12"/></linearGradient>' +
+            '<linearGradient id="m3_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#b45309"/></linearGradient>' +
+            '<filter id="m3_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+          '</defs>' +
+          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m3_ribbonL)" filter="url(#m3_shadow)"/>' +
+          '<path d="M24 119 L41 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M40 123 L52 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m3_ribbonR)" filter="url(#m3_shadow)"/>' +
+          '<path d="M76 123 L64 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M92 119 L75 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
+          '<g filter="url(#m3_shadow)">' +
+            '<circle cx="58" cy="52" r="46" fill="url(#m3_coinOut)"/>' +
+            '<circle cx="58" cy="52" r="43.5" fill="#9a3412" stroke="#fed7aa" stroke-width="1.2"/>' +
+            '<circle cx="58" cy="52" r="37" fill="url(#m3_coinIn)"/>' +
+            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#ffedd5" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+          '</g>' +
+          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#fff7ed" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#fff7ed" opacity="0.95"/>' +
+          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#fff7ed" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
+          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#fff7ed" opacity="0.95"/>' +
+          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">3</text>' +
+          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#fff7ed" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">BRONZE</text>' +
+          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.35" style="filter: blur(1.5px)"/>' +
+        '</svg>';
+      }
+    }
+
     const rankConfigs = [
       { rank: 1, label: 'อันดับ 1 (Gold)', badge: '🏆 อันดับ 1 - GOLD', cls: 'rank-1' },
       { rank: 2, label: 'อันดับ 2 (Silver)', badge: '🥈 อันดับ 2 - SILVER', cls: 'rank-2' },
@@ -1838,12 +1929,19 @@ function renderStatsView() {
       const timeStr = d ? formatDurationHours(d.avgHours) : '-';
       const metaStr = d ? ('แก้ไขเสร็จแล้ว ' + d.count + ' เรื่อง') : 'รอการบันทึกแก้ไขเสร็จสิ้น';
       return '<div class="fastest-card ' + rc.cls + '">' +
-        '<div class="fastest-card-header">' +
-          '<span class="fastest-rank-badge">' + rc.badge + '</span>' +
-        '</div>' +
-        '<h5 class="fastest-dept-name">' + esc(name) + '</h5>' +
-        '<div class="fastest-time-stat">' +
-          '<span class="fastest-time-num">' + esc(timeStr) + '</span>' +
+        '<div class="fastest-card-top">' +
+          '<div class="fastest-card-info">' +
+            '<div class="fastest-card-header">' +
+              '<span class="fastest-rank-badge">' + rc.badge + '</span>' +
+            '</div>' +
+            '<h5 class="fastest-dept-name">' + esc(name) + '</h5>' +
+            '<div class="fastest-time-stat">' +
+              '<span class="fastest-time-num">' + esc(timeStr) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="fastest-medal-box">' +
+            getMedalSvg(rc.rank) +
+          '</div>' +
         '</div>' +
         '<div class="fastest-meta">' +
           '<span>ระยะเวลาเฉลี่ย/เรื่อง</span>' +

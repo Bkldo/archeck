@@ -833,6 +833,36 @@ td { line-height: 1.45; }
   border-top: 4px solid #d97706;
   background: linear-gradient(180deg, #fff7ed 0%, #ffffff 40%);
 }
+.fastest-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fastest-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.fastest-medal-box {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -8px;
+  margin-right: -6px;
+  margin-bottom: -14px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.16));
+  transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fastest-card:hover .fastest-medal-box {
+  transform: scale(1.06) rotate(3deg);
+}
+.medal-svg {
+  display: block;
+}
 .fastest-card-header {
   display: flex;
   align-items: center;
@@ -874,7 +904,7 @@ td { line-height: 1.45; }
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .fastest-time-num {
   font-size: 24px;
