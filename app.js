@@ -1828,91 +1828,121 @@ function renderStatsView() {
     
     function getMedalSvg(rank) {
       if (rank === 1) {
-        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+        return '<svg width="114" height="130" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
           '<defs>' +
-            '<linearGradient id="m1_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
-            '<linearGradient id="m1_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
-            '<linearGradient id="m1_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="35%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#9a3412"/></linearGradient>' +
-            '<linearGradient id="m1_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fde047"/><stop offset="100%" stop-color="#d97706"/></linearGradient>' +
-            '<filter id="m1_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+            '<linearGradient id="m1_ribLeft" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m1_ribRight" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient>' +
+            '<linearGradient id="m1_outerRim" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a"/><stop offset="35%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#9a3412"/></linearGradient>' +
+            '<linearGradient id="m1_reeds" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fde047"/><stop offset="100%" stop-color="#b45309"/></linearGradient>' +
+            '<linearGradient id="m1_midBevel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#78350f"/></linearGradient>' +
+            '<linearGradient id="m1_innerRing" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef9c3"/><stop offset="100%" stop-color="#d97706"/></linearGradient>' +
+            '<linearGradient id="m1_innerFace" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fde047"/><stop offset="50%" stop-color="#eab308"/><stop offset="100%" stop-color="#9a3412"/></linearGradient>' +
+            '<radialGradient id="m1_dotGrad" cx="35%" cy="35%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#fde047"/><stop offset="100%" stop-color="#b45309"/></radialGradient>' +
+            '<linearGradient id="m1_numFace" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#fef08a"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>' +
+            '<filter id="m1_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.25"/></filter>' +
           '</defs>' +
-          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m1_ribbonL)" filter="url(#m1_shadow)"/>' +
-          '<path d="M24 119 L41 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
-          '<path d="M40 123 L52 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
-          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m1_ribbonR)" filter="url(#m1_shadow)"/>' +
-          '<path d="M76 123 L64 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
-          '<path d="M92 119 L75 78" stroke="#fef08a" stroke-width="2" opacity="0.65"/>' +
+          '<path d="M44 98 L22 154 L38 144 L54 156 L66 106 Z" fill="url(#m1_ribLeft)" filter="url(#m1_shadow)"/>' +
+          '<path d="M26 148 L46 99" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M50 151 L64 105" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M74 106 L86 156 L102 144 L118 154 L96 98 Z" fill="url(#m1_ribRight)" filter="url(#m1_shadow)"/>' +
+          '<path d="M76 105 L90 151" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M94 99 L114 148" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
           '<g filter="url(#m1_shadow)">' +
-            '<circle cx="58" cy="52" r="46" fill="url(#m1_coinOut)"/>' +
-            '<circle cx="58" cy="52" r="43.5" fill="#ca8a04" stroke="#fef08a" stroke-width="1.2"/>' +
-            '<circle cx="58" cy="52" r="37" fill="url(#m1_coinIn)"/>' +
-            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#fef9c3" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+            '<circle cx="70" cy="62" r="52" fill="url(#m1_outerRim)"/>' +
+            '<circle cx="70" cy="62" r="49" fill="none" stroke="url(#m1_reeds)" stroke-width="6" stroke-dasharray="2 2.5"/>' +
+            '<circle cx="70" cy="62" r="46" fill="url(#m1_midBevel)" stroke="#ffffff" stroke-width="0.8" opacity="0.65"/>' +
+            '<circle cx="70" cy="62" r="41.5" fill="none" stroke="url(#m1_innerRing)" stroke-width="1.6"/>' +
+            '<circle cx="70" cy="62" r="40" fill="url(#m1_innerFace)"/>' +
+            '<circle cx="70" cy="62" r="38.2" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.35"/>' +
           '</g>' +
-          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#fffbeb" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#fffbeb" opacity="0.95"/>' +
-          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#fffbeb" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#fffbeb" opacity="0.95"/>' +
-          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">1</text>' +
-          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#fffbeb" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">GOLD</text>' +
-          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.38" style="filter: blur(1.5px)"/>' +
+          '<circle cx="60" cy="88" r="2.6" fill="url(#m1_dotGrad)" stroke="#fef08a" stroke-width="0.5"/>' +
+          '<circle cx="70" cy="88.5" r="3.2" fill="url(#m1_dotGrad)" stroke="#fef08a" stroke-width="0.6"/>' +
+          '<circle cx="80" cy="88" r="2.6" fill="url(#m1_dotGrad)" stroke="#fef08a" stroke-width="0.5"/>' +
+          '<text x="70" y="69" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#78350f" opacity="0.65">1</text>' +
+          '<text x="70" y="66" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#ffffff" opacity="0.9">1</text>' +
+          '<text x="70" y="67.5" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="url(#m1_numFace)" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.35))">1</text>' +
+          '<text x="70" y="81" font-family="\'Sarabun\', sans-serif" font-size="12" font-weight="900" letter-spacing="1.5" text-anchor="middle" fill="#fffbeb" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.45))">GOLD</text>' +
+          '<path d="M42 48 A36 36 0 0 1 98 48 A38 18 0 0 0 42 48 Z" fill="#ffffff" opacity="0.25"/>' +
+          '<circle cx="98" cy="40" r="4.5" fill="#ffffff" opacity="0.85" style="filter: blur(1.5px)"/>' +
+          '<circle cx="98" cy="40" r="2" fill="#ffffff"/>' +
         '</svg>';
       } else if (rank === 2) {
-        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+        return '<svg width="114" height="130" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
           '<defs>' +
-            '<linearGradient id="m2_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
-            '<linearGradient id="m2_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
-            '<linearGradient id="m2_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#475569"/></linearGradient>' +
-            '<linearGradient id="m2_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#94a3b8"/></linearGradient>' +
-            '<filter id="m2_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+            '<linearGradient id="m2_ribLeft" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m2_ribRight" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient>' +
+            '<linearGradient id="m2_outerRim" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#334155"/></linearGradient>' +
+            '<linearGradient id="m2_reeds" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="100%" stop-color="#475569"/></linearGradient>' +
+            '<linearGradient id="m2_midBevel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>' +
+            '<linearGradient id="m2_innerRing" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#64748b"/></linearGradient>' +
+            '<linearGradient id="m2_innerFace" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8fafc"/><stop offset="50%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#475569"/></linearGradient>' +
+            '<radialGradient id="m2_dotGrad" cx="35%" cy="35%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#e2e8f0"/><stop offset="100%" stop-color="#475569"/></radialGradient>' +
+            '<linearGradient id="m2_numFace" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#f1f5f9"/><stop offset="100%" stop-color="#cbd5e1"/></linearGradient>' +
+            '<filter id="m2_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.25"/></filter>' +
           '</defs>' +
-          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m2_ribbonL)" filter="url(#m2_shadow)"/>' +
-          '<path d="M24 119 L41 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M40 123 L52 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m2_ribbonR)" filter="url(#m2_shadow)"/>' +
-          '<path d="M76 123 L64 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M92 119 L75 78" stroke="#e2e8f0" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M44 98 L22 154 L38 144 L54 156 L66 106 Z" fill="url(#m2_ribLeft)" filter="url(#m2_shadow)"/>' +
+          '<path d="M26 148 L46 99" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M50 151 L64 105" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M74 106 L86 156 L102 144 L118 154 L96 98 Z" fill="url(#m2_ribRight)" filter="url(#m2_shadow)"/>' +
+          '<path d="M76 105 L90 151" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M94 99 L114 148" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
           '<g filter="url(#m2_shadow)">' +
-            '<circle cx="58" cy="52" r="46" fill="url(#m2_coinOut)"/>' +
-            '<circle cx="58" cy="52" r="43.5" fill="#64748b" stroke="#f1f5f9" stroke-width="1.2"/>' +
-            '<circle cx="58" cy="52" r="37" fill="url(#m2_coinIn)"/>' +
-            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+            '<circle cx="70" cy="62" r="52" fill="url(#m2_outerRim)"/>' +
+            '<circle cx="70" cy="62" r="49" fill="none" stroke="url(#m2_reeds)" stroke-width="6" stroke-dasharray="2 2.5"/>' +
+            '<circle cx="70" cy="62" r="46" fill="url(#m2_midBevel)" stroke="#ffffff" stroke-width="0.8" opacity="0.65"/>' +
+            '<circle cx="70" cy="62" r="41.5" fill="none" stroke="url(#m2_innerRing)" stroke-width="1.6"/>' +
+            '<circle cx="70" cy="62" r="40" fill="url(#m2_innerFace)"/>' +
+            '<circle cx="70" cy="62" r="38.2" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.35"/>' +
           '</g>' +
-          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#f8fafc" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#f8fafc" opacity="0.95"/>' +
-          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#f8fafc" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#f8fafc" opacity="0.95"/>' +
-          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">2</text>' +
-          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#f8fafc" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">SILVER</text>' +
-          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.4" style="filter: blur(1.5px)"/>' +
+          '<circle cx="60" cy="88" r="2.6" fill="url(#m2_dotGrad)" stroke="#f1f5f9" stroke-width="0.5"/>' +
+          '<circle cx="70" cy="88.5" r="3.2" fill="url(#m2_dotGrad)" stroke="#f1f5f9" stroke-width="0.6"/>' +
+          '<circle cx="80" cy="88" r="2.6" fill="url(#m2_dotGrad)" stroke="#f1f5f9" stroke-width="0.5"/>' +
+          '<text x="70" y="69" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#334155" opacity="0.65">2</text>' +
+          '<text x="70" y="66" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#ffffff" opacity="0.9">2</text>' +
+          '<text x="70" y="67.5" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="url(#m2_numFace)" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.35))">2</text>' +
+          '<text x="70" y="81" font-family="\'Sarabun\', sans-serif" font-size="12" font-weight="900" letter-spacing="1.5" text-anchor="middle" fill="#f8fafc" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.45))">SILVER</text>' +
+          '<path d="M42 48 A36 36 0 0 1 98 48 A38 18 0 0 0 42 48 Z" fill="#ffffff" opacity="0.25"/>' +
+          '<circle cx="98" cy="40" r="4.5" fill="#ffffff" opacity="0.85" style="filter: blur(1.5px)"/>' +
+          '<circle cx="98" cy="40" r="2" fill="#ffffff"/>' +
         '</svg>';
       } else {
-        return '<svg width="116" height="132" viewBox="0 0 116 132" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
+        return '<svg width="114" height="130" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
           '<defs>' +
-            '<linearGradient id="m3_ribbonL" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>' +
-            '<linearGradient id="m3_ribbonR" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
-            '<linearGradient id="m3_coinOut" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffedd5"/><stop offset="35%" stop-color="#ea580c"/><stop offset="100%" stop-color="#7c2d12"/></linearGradient>' +
-            '<linearGradient id="m3_coinIn" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#b45309"/></linearGradient>' +
-            '<filter id="m3_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/></filter>' +
+            '<linearGradient id="m3_ribLeft" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#991b1b"/></linearGradient>' +
+            '<linearGradient id="m3_ribRight" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient>' +
+            '<linearGradient id="m3_outerRim" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffedd5"/><stop offset="35%" stop-color="#ea580c"/><stop offset="100%" stop-color="#7c2d12"/></linearGradient>' +
+            '<linearGradient id="m3_reeds" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fed7aa"/><stop offset="100%" stop-color="#7c2d12"/></linearGradient>' +
+            '<linearGradient id="m3_midBevel" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fff7ed"/><stop offset="40%" stop-color="#f97316"/><stop offset="100%" stop-color="#431407"/></linearGradient>' +
+            '<linearGradient id="m3_innerRing" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffedd5"/><stop offset="100%" stop-color="#c2410c"/></linearGradient>' +
+            '<linearGradient id="m3_innerFace" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fdba74"/><stop offset="50%" stop-color="#ea580c"/><stop offset="100%" stop-color="#7c2d12"/></linearGradient>' +
+            '<radialGradient id="m3_dotGrad" cx="35%" cy="35%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#fed7aa"/><stop offset="100%" stop-color="#7c2d12"/></radialGradient>' +
+            '<linearGradient id="m3_numFace" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#ffedd5"/><stop offset="100%" stop-color="#ea580c"/></linearGradient>' +
+            '<filter id="m3_shadow" x="-20%" y="-10%" width="140%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.25"/></filter>' +
           '</defs>' +
-          '<path d="M38 76 L18 122 L31 114 L44 126 L54 76 Z" fill="url(#m3_ribbonL)" filter="url(#m3_shadow)"/>' +
-          '<path d="M24 119 L41 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M40 123 L52 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M62 76 L72 126 L85 114 L98 122 L78 76 Z" fill="url(#m3_ribbonR)" filter="url(#m3_shadow)"/>' +
-          '<path d="M76 123 L64 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
-          '<path d="M92 119 L75 78" stroke="#fed7aa" stroke-width="2" opacity="0.75"/>' +
+          '<path d="M44 98 L22 154 L38 144 L54 156 L66 106 Z" fill="url(#m3_ribLeft)" filter="url(#m3_shadow)"/>' +
+          '<path d="M26 148 L46 99" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M50 151 L64 105" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M74 106 L86 156 L102 144 L118 154 L96 98 Z" fill="url(#m3_ribRight)" filter="url(#m3_shadow)"/>' +
+          '<path d="M76 105 L90 151" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
+          '<path d="M94 99 L114 148" stroke="#fde047" stroke-width="1.8" opacity="0.85"/>' +
           '<g filter="url(#m3_shadow)">' +
-            '<circle cx="58" cy="52" r="46" fill="url(#m3_coinOut)"/>' +
-            '<circle cx="58" cy="52" r="43.5" fill="#9a3412" stroke="#fed7aa" stroke-width="1.2"/>' +
-            '<circle cx="58" cy="52" r="37" fill="url(#m3_coinIn)"/>' +
-            '<circle cx="58" cy="52" r="33.5" fill="none" stroke="#ffedd5" stroke-width="1.5" stroke-dasharray="4 2.5" opacity="0.85"/>' +
+            '<circle cx="70" cy="62" r="52" fill="url(#m3_outerRim)"/>' +
+            '<circle cx="70" cy="62" r="49" fill="none" stroke="url(#m3_reeds)" stroke-width="6" stroke-dasharray="2 2.5"/>' +
+            '<circle cx="70" cy="62" r="46" fill="url(#m3_midBevel)" stroke="#ffffff" stroke-width="0.8" opacity="0.65"/>' +
+            '<circle cx="70" cy="62" r="41.5" fill="none" stroke="url(#m3_innerRing)" stroke-width="1.6"/>' +
+            '<circle cx="70" cy="62" r="40" fill="url(#m3_innerFace)"/>' +
+            '<circle cx="70" cy="62" r="38.2" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.35"/>' +
           '</g>' +
-          '<path d="M31 52 C31 35 42 25 50 24 M31 52 C29 62 36 71 44 74" fill="none" stroke="#fff7ed" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M29 49 Q34 46 33 41 Q28 44 29 49 Z M31 37 Q36 34 36 31 Q31 33 31 37 Z M36 29 Q41 27 43 24 Q38 26 36 29 Z M32 60 Q37 62 36 67 Q31 64 32 60 Z M39 69 Q44 72 44 75 Q39 73 39 69 Z" fill="#fff7ed" opacity="0.95"/>' +
-          '<path d="M85 52 C85 35 74 25 66 24 M85 52 C87 62 80 71 72 74" fill="none" stroke="#fff7ed" stroke-width="2.2" stroke-linecap="round" opacity="0.9"/>' +
-          '<path d="M87 49 Q82 46 83 41 Q88 44 87 49 Z M85 37 Q80 34 80 31 Q85 33 85 37 Z M80 29 Q75 27 73 24 Q78 26 80 29 Z M84 60 Q79 62 80 67 Q85 64 84 60 Z M77 69 Q72 72 72 75 Q77 73 77 69 Z" fill="#fff7ed" opacity="0.95"/>' +
-          '<text x="58" y="59" font-family="\'Sarabun\', sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#ffffff" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.35))">3</text>' +
-          '<text x="58" y="76" font-family="\'Sarabun\', sans-serif" font-size="11" font-weight="800" letter-spacing="1" text-anchor="middle" fill="#fff7ed" opacity="0.95" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3))">BRONZE</text>' +
-          '<circle cx="42" cy="34" r="8" fill="#ffffff" opacity="0.35" style="filter: blur(1.5px)"/>' +
+          '<circle cx="60" cy="88" r="2.6" fill="url(#m3_dotGrad)" stroke="#ffedd5" stroke-width="0.5"/>' +
+          '<circle cx="70" cy="88.5" r="3.2" fill="url(#m3_dotGrad)" stroke="#ffedd5" stroke-width="0.6"/>' +
+          '<circle cx="80" cy="88" r="2.6" fill="url(#m3_dotGrad)" stroke="#ffedd5" stroke-width="0.5"/>' +
+          '<text x="70" y="69" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#7c2d12" opacity="0.65">3</text>' +
+          '<text x="70" y="66" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="#ffffff" opacity="0.9">3</text>' +
+          '<text x="70" y="67.5" font-family="\'Sarabun\', sans-serif" font-size="44" font-weight="900" letter-spacing="-1" text-anchor="middle" fill="url(#m3_numFace)" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.35))">3</text>' +
+          '<text x="70" y="81" font-family="\'Sarabun\', sans-serif" font-size="12" font-weight="900" letter-spacing="1.5" text-anchor="middle" fill="#fff7ed" style="filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.45))">BRONZE</text>' +
+          '<path d="M42 48 A36 36 0 0 1 98 48 A38 18 0 0 0 42 48 Z" fill="#ffffff" opacity="0.25"/>' +
+          '<circle cx="98" cy="40" r="4.5" fill="#ffffff" opacity="0.85" style="filter: blur(1.5px)"/>' +
+          '<circle cx="98" cy="40" r="2" fill="#ffffff"/>' +
         '</svg>';
       }
     }
