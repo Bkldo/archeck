@@ -223,6 +223,7 @@
               <p id="adminUserLabel"></p>
             </div>
             <div class="admin-actions">
+              <button id="logsButton" class="secondary-button" type="button" style="display:none;"><i data-lucide="history"></i><span>ประวัติการใช้งาน</span></button>
               <button id="settingsButton" class="secondary-button" type="button"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
               <button id="logoutButton" class="ghost-button" type="button"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button>
             </div>
@@ -496,6 +497,40 @@
           <button class="primary-button" type="submit"><i data-lucide="save"></i><span>บันทึกการตั้งค่า</span></button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="logsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="logsTitle">
+    <div class="modal-card logs-card">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Audit & Usage Logs</p>
+          <h3 id="logsTitle">ประวัติการใช้งานระบบ (30 วันล่าสุด)</h3>
+        </div>
+        <button class="icon-button" data-close-logs type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div class="filter-row" style="margin-bottom: 16px;">
+        <input id="logsSearchInput" type="search" placeholder="ค้นหาผู้ใช้, การกระทำ หรือรายละเอียด..." style="max-width: 320px;">
+        <button class="secondary-button" id="refreshLogsBtn" type="button"><i data-lucide="refresh-cw"></i><span>รีเฟรช</span></button>
+      </div>
+      <div class="table-wrap logs-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 170px;">วัน-เวลา</th>
+              <th style="width: 130px;">ผู้ใช้งาน</th>
+              <th style="width: 120px;">สิทธิ์</th>
+              <th style="width: 160px;">การกระทำ</th>
+              <th>รายละเอียด</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody"></tbody>
+        </table>
+      </div>
+      <div class="form-actions right" style="margin-top: 16px; align-items: center;">
+        <span class="muted" style="margin-right: auto; font-size: 13px;"><i data-lucide="shield-alert" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>เฉพาะ Administrator ดูได้คนเดียว | เก็บประวัติย้อนหลัง 30 วัน</span>
+        <button class="primary-button" data-close-logs type="button">ปิดหน้าต่าง</button>
+      </div>
     </div>
   </div>
 

@@ -6,7 +6,8 @@ const ACTION_MAP = {
   createReport: 'createReport',
   login: 'login',
   updateReport: 'updateReport',
-  saveSettings: 'saveSettings'
+  saveSettings: 'saveSettings',
+  getLogs: 'getLogs'
 };
 window.__INITIAL_PAGE__ = new URLSearchParams(window.location.search).get('page') || '';
 window.__INITIAL_EDIT__ = new URLSearchParams(window.location.search).get('edit') || '';
@@ -18,6 +19,7 @@ const state = {
   priorities: [],
   reports: [],
   adminReports: [],
+  logs: [],
   filters: { publicSearch: '', publicStatus: 'all', adminSearch: '', adminStatus: 'all' }
 };
 
@@ -43,7 +45,7 @@ async function serverCall(name) {
   const args = Array.prototype.slice.call(arguments, 1);
   const action = ACTION_MAP[name] || name;
   const payload = await normalizePayload(action, args[0]);
-  if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings') {
+  if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings' || action === 'getLogs') {
     return apiJsonp(action, payload);
   }
   // For createReport / updateReport: use reliable form POST to hidden iframe, then fetch fresh data via JSONP
@@ -75,7 +77,7 @@ async function normalizePayload(action, data) {
   if (data instanceof HTMLFormElement) {
     return formToPayload(data);
   }
-  if (typeof data === 'string' && (action === 'getAdminReports' || action === 'listReports' || action === 'saveSettings')) {
+  if (typeof data === 'string' && (action === 'getAdminReports' || action === 'listReports' || action === 'saveSettings' || action === 'getLogs')) {
     return { token: data };
   }
   return data == null ? {} : data;
@@ -317,8 +319,17 @@ function setupForms() {
   }
   document.getElementById('logoutButton').addEventListener('click', logoutAdmin);
   document.getElementById('settingsButton').addEventListener('click', openSettings);
+  var logsBtnEl = document.getElementById('logsButton');
+  if (logsBtnEl) logsBtnEl.addEventListener('click', openLogs);
   document.querySelectorAll('[data-close-modal]').forEach(function(button) { button.addEventListener('click', closeEditModal); });
   document.querySelectorAll('[data-close-settings]').forEach(function(button) { button.addEventListener('click', closeSettings); });
+  document.querySelectorAll('[data-close-logs]').forEach(function(button) { button.addEventListener('click', closeLogs); });
+  var refreshLogsBtn = document.getElementById('refreshLogsBtn');
+  if (refreshLogsBtn) refreshLogsBtn.addEventListener('click', loadLogs);
+  var logsSearchInput = document.getElementById('logsSearchInput');
+  if (logsSearchInput) {
+    logsSearchInput.addEventListener('input', function() { filterAndRenderLogs(); });
+  }
   document.querySelectorAll('[data-close-map]').forEach(function(button) { button.addEventListener('click', closeCombinedMapModal); });
   var mapStatusFilterEl = document.getElementById('mapStatusFilter');
   if (mapStatusFilterEl) mapStatusFilterEl.addEventListener('change', renderCombinedMapMarkers);
@@ -1214,6 +1225,10 @@ function renderAdmin(stats) {
   if (settingsBtn) {
     settingsBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
   }
+  const logsBtn = document.getElementById('logsButton');
+  if (logsBtn) {
+    logsBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
+  }
   renderStats(stats || buildLocalStats(state.adminReports));
   renderAdminTable();
   renderStatsView();
@@ -1412,6 +1427,73 @@ function handleSessionExpired() {
 
 function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+function openLogs() {
+  if (!checkSessionExpiration()) return;
+  if (!state.user || state.user.role !== 'Administrator') {
+    toast('เฉพาะ Administrator เท่านั้นที่มีสิทธิ์ดูประวัติการใช้งาน', true);
+    return;
+  }
+  document.getElementById('logsModal').classList.remove('hidden');
+  loadLogs();
+}
+
+function closeLogs() {
+  document.getElementById('logsModal').classList.add('hidden');
+}
+
+function loadLogs() {
+  if (!checkSessionExpiration()) return;
+  const refreshBtn = document.getElementById('refreshLogsBtn');
+  if (refreshBtn) setBusy(refreshBtn, true);
+  showLoading('กำลังโหลดประวัติการใช้งาน...');
+  serverCall('getLogs', { token: state.token })
+    .then(function(result) {
+      hideLoading();
+      if (refreshBtn) setBusy(refreshBtn, false);
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดประวัติการใช้งานไม่สำเร็จ');
+      state.logs = result.logs || [];
+      filterAndRenderLogs();
+    })
+    .catch(function(err) {
+      hideLoading();
+      if (refreshBtn) setBusy(refreshBtn, false);
+      showError(err);
+    });
+}
+
+function filterAndRenderLogs() {
+  const body = document.getElementById('logsTableBody');
+  if (!body) return;
+  const query = String(document.getElementById('logsSearchInput')?.value || '').trim().toLowerCase();
+  const filtered = (state.logs || []).filter(function(log) {
+    if (!query) return true;
+    const text = [log.username, log.role, log.action, log.details, log.timestamp].join(' ').toLowerCase();
+    return text.includes(query);
+  });
+  if (!filtered.length) {
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่พบประวัติการใช้งาน</td></tr>';
+    return;
+  }
+  body.innerHTML = filtered.map(function(log) {
+    let badgeClass = '';
+    const actionUpper = String(log.action || '').toUpperCase();
+    if (actionUpper.includes('LOGIN')) badgeClass = 'login';
+    else if (actionUpper.includes('CREATE')) badgeClass = 'create';
+    else if (actionUpper.includes('UPDATE')) badgeClass = 'update';
+    else if (actionUpper.includes('DELETE')) badgeClass = 'delete';
+    else if (actionUpper.includes('SETTINGS')) badgeClass = 'settings';
+    
+    return '<tr>' +
+      '<td><span style="white-space:nowrap;font-size:13px;">' + esc(log.timestamp || '-') + '</span></td>' +
+      '<td><b>' + esc(log.username || '-') + '</b></td>' +
+      '<td><span style="color:var(--muted);font-size:13px;">' + esc(log.role || '-') + '</span></td>' +
+      '<td><span class="log-action-badge ' + badgeClass + '">' + esc(log.action || '-') + '</span></td>' +
+      '<td>' + esc(log.details || '-') + '</td>' +
+    '</tr>';
+  }).join('');
+  if (window.lucide) lucide.createIcons();
+}
 
 function filterReports(reports, query, status) {
   const q = String(query || '').toLowerCase().trim();
