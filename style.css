@@ -309,6 +309,8 @@ td { line-height: 1.45; }
 .settings-card { width: min(680px, 100%); }
 .logs-card { width: min(960px, 98%); }
 .logs-table-wrap { max-height: 540px; overflow-y: auto; }
+.users-card { width: min(960px, 98%); }
+.users-table-wrap { max-height: 540px; overflow-y: auto; }
 .log-action-badge {
   display: inline-block;
   padding: 3px 10px;

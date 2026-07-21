@@ -7,7 +7,10 @@ const ACTION_MAP = {
   login: 'login',
   updateReport: 'updateReport',
   saveSettings: 'saveSettings',
-  getLogs: 'getLogs'
+  getLogs: 'getLogs',
+  listUsers: 'listUsers',
+  saveUser: 'saveUser',
+  deleteUser: 'deleteUser'
 };
 window.__INITIAL_PAGE__ = new URLSearchParams(window.location.search).get('page') || '';
 window.__INITIAL_EDIT__ = new URLSearchParams(window.location.search).get('edit') || '';
@@ -20,7 +23,8 @@ const state = {
   reports: [],
   adminReports: [],
   logs: [],
-  filters: { publicSearch: '', publicStatus: 'all', adminSearch: '', adminStatus: 'all' }
+  users: [],
+  filters: { publicSearch: '', publicStatus: 'all', adminSearch: '', adminStatus: 'all', adminDept: 'all' }
 };
 
 const pageTitles = {
@@ -45,7 +49,7 @@ async function serverCall(name) {
   const args = Array.prototype.slice.call(arguments, 1);
   const action = ACTION_MAP[name] || name;
   const payload = await normalizePayload(action, args[0]);
-  if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings' || action === 'getLogs') {
+  if (action === 'bootstrap' || action === 'listReports' || action === 'login' || action === 'getAdminReports' || action === 'saveSettings' || action === 'getLogs' || action === 'listUsers' || action === 'saveUser' || action === 'deleteUser') {
     return apiJsonp(action, payload);
   }
   // For createReport / updateReport: use reliable form POST to hidden iframe, then fetch fresh data via JSONP
@@ -358,6 +362,14 @@ function setupForms() {
   document.getElementById('statusFilter').addEventListener('change', function(e) { state.filters.publicStatus = e.target.value; renderPublicReports(); });
   document.getElementById('adminSearchInput').addEventListener('input', function(e) { state.filters.adminSearch = e.target.value; renderAdminTable(); });
   document.getElementById('adminStatusFilter').addEventListener('change', function(e) { state.filters.adminStatus = e.target.value; renderAdminTable(); });
+  var usersBtnEl = document.getElementById('usersButton');
+  if (usersBtnEl) usersBtnEl.addEventListener('click', openUsersModal);
+  document.querySelectorAll('[data-close-users]').forEach(function(button) { button.addEventListener('click', closeUsersModal); });
+  document.querySelectorAll('[data-close-user-edit]').forEach(function(button) { button.addEventListener('click', closeUserEditModal); });
+  var userFormEl = document.getElementById('userForm');
+  if (userFormEl) userFormEl.addEventListener('submit', submitUserForm);
+  var adminDeptFilterEl = document.getElementById('adminDeptFilter');
+  if (adminDeptFilterEl) adminDeptFilterEl.addEventListener('change', function(e) { state.filters.adminDept = e.target.value; renderAdminTable(); });
 }
 
 function setDefaultDate() {
@@ -1220,7 +1232,16 @@ function restoreAdminSession() {
 function renderAdmin(stats) {
   document.getElementById('loginPanel').classList.add('hidden');
   document.getElementById('adminPanel').classList.remove('hidden');
-  document.getElementById('adminUserLabel').textContent = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
+  let userLabel = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
+  if (state.user && state.user.department) {
+    userLabel += ' (' + state.user.department + ')';
+  }
+  if (state.user && state.user.role === 'Administrator') {
+    userLabel += ' [ผู้ดูแลระบบสูงสุด]';
+  } else if (state.user && state.user.department) {
+    userLabel += ' [สิทธิ์: ' + state.user.department + ' และเรื่องที่ยังไม่ระบุฝ่าย]';
+  }
+  document.getElementById('adminUserLabel').textContent = userLabel;
   const settingsBtn = document.getElementById('settingsButton');
   if (settingsBtn) {
     settingsBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
@@ -1229,14 +1250,49 @@ function renderAdmin(stats) {
   if (logsBtn) {
     logsBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
   }
+  const usersBtn = document.getElementById('usersButton');
+  if (usersBtn) {
+    usersBtn.style.display = (state.user && state.user.role === 'Administrator') ? '' : 'none';
+  }
+  populateAdminDeptFilter();
   renderStats(stats || buildLocalStats(state.adminReports));
   renderAdminTable();
   renderStatsView();
 }
 
+function populateAdminDeptFilter() {
+  const sel = document.getElementById('adminDeptFilter');
+  if (!sel) return;
+  const currentVal = sel.value || 'all';
+  if (state.user && state.user.role === 'Administrator') {
+    const deptsSet = {};
+    (state.adminReports || []).forEach(function(r) {
+      if (r.respDepartment && r.respDepartment !== '-' && r.respDepartment !== '― ไม่ระบุ / อื่นๆ ―') {
+        deptsSet[r.respDepartment] = true;
+      }
+    });
+    const depts = Object.keys(deptsSet).sort();
+    sel.innerHTML = '<option value="all">ทุกฝ่ายรับผิดชอบ</option>' +
+      depts.map(function(d) { return '<option value="' + escAttr(d) + '">' + esc(d) + '</option>'; }).join('') +
+      '<option value="unassigned">― ยังไม่ระบุฝ่ายรับผิดชอบ ―</option>';
+  } else if (state.user && state.user.department) {
+    sel.innerHTML = '<option value="all">ทั้งหมด (' + esc(state.user.department) + ' + ยังไม่ระบุ)</option>' +
+      '<option value="my">เฉพาะรายการของ ' + esc(state.user.department) + '</option>' +
+      '<option value="unassigned">เฉพาะรายการที่ยังไม่ระบุฝ่าย</option>';
+  } else {
+    sel.innerHTML = '<option value="all">ทุกรายการที่เกี่ยวข้อง</option>';
+  }
+  if (sel.querySelector('option[value="' + currentVal + '"]')) {
+    sel.value = currentVal;
+  } else {
+    sel.value = 'all';
+    state.filters.adminDept = 'all';
+  }
+}
+
 function renderAdminTable() {
   const body = document.getElementById('adminTableBody');
-  const rows = filterReports(state.adminReports, state.filters.adminSearch, state.filters.adminStatus);
+  const rows = filterReports(state.adminReports, state.filters.adminSearch, state.filters.adminStatus, state.filters.adminDept);
   if (!rows.length) {
     body.innerHTML = '<tr><td colspan="7" class="empty-state">ไม่พบรายการ</td></tr>';
     return;
@@ -1284,8 +1340,11 @@ function openEdit(id) {
   form.priority.value = report.priority || 'ปกติ';
   form.assignedTo.value = report.assignedTo || '';
   if (form.respDepartment) {
-    // Select or fallback to empty (— ไม่ระบุ —)
-    form.respDepartment.value = report.respDepartment || '';
+    if (state.user && state.user.role !== 'Administrator' && (!report.respDepartment || report.respDepartment === '-' || report.respDepartment === '― ไม่ระบุ / อื่นๆ ―')) {
+      form.respDepartment.value = state.user.department || '';
+    } else {
+      form.respDepartment.value = report.respDepartment || '';
+    }
   }
   form.adminNote.value = report.adminNote || '';
   form.afterImage.value = '';
@@ -1495,15 +1554,191 @@ function filterAndRenderLogs() {
   if (window.lucide) lucide.createIcons();
 }
 
-function filterReports(reports, query, status) {
+function filterReports(reports, query, status, dept) {
   const q = String(query || '').toLowerCase().trim();
   return reports.filter(function(report) {
     const statusOk = !status || status === 'all' || report.status === status;
-    if (!q) return statusOk;
-    const text = [report.id, report.category, report.locationName, report.problem, report.assignedTo, report.adminNote].join(' ').toLowerCase();
-    return statusOk && text.indexOf(q) >= 0;
+    let deptOk = true;
+    if (dept && dept !== 'all') {
+      const isUnassigned = !report.respDepartment || report.respDepartment === '-' || report.respDepartment === 'ไม่ระบุ' || report.respDepartment === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || report.respDepartment === '― ไม่ระบุ / อื่นๆ ―';
+      if (state.user && state.user.role === 'Administrator') {
+        if (dept === 'unassigned') deptOk = isUnassigned;
+        else deptOk = report.respDepartment === dept;
+      } else {
+        if (dept === 'my') deptOk = report.respDepartment === (state.user ? state.user.department : '');
+        else if (dept === 'unassigned') deptOk = isUnassigned;
+      }
+    }
+    if (!statusOk || !deptOk) return false;
+    if (!q) return true;
+    const text = [report.id, report.category, report.locationName, report.problem, report.assignedTo, report.respDepartment, report.adminNote].join(' ').toLowerCase();
+    return text.indexOf(q) >= 0;
   });
 }
+
+function openUsersModal() {
+  if (!checkSessionExpiration()) return;
+  if (!state.user || state.user.role !== 'Administrator') {
+    toast('เฉพาะ Administrator เท่านั้นที่มีสิทธิ์จัดการผู้ใช้และฝ่าย', true);
+    return;
+  }
+  document.getElementById('usersModal').classList.remove('hidden');
+  loadUsers();
+}
+
+function closeUsersModal() {
+  document.getElementById('usersModal').classList.add('hidden');
+}
+
+function loadUsers() {
+  if (!checkSessionExpiration()) return;
+  const refreshBtn = document.getElementById('refreshUsersBtn');
+  if (refreshBtn) setBusy(refreshBtn, true);
+  showLoading('กำลังโหลดรายชื่อผู้ใช้...');
+  serverCall('listUsers', { token: state.token })
+    .then(function(result) {
+      hideLoading();
+      if (refreshBtn) setBusy(refreshBtn, false);
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดข้อมูลผู้ใช้ไม่สำเร็จ');
+      state.users = result.users || [];
+      renderUsersTable();
+    })
+    .catch(function(err) {
+      hideLoading();
+      if (refreshBtn) setBusy(refreshBtn, false);
+      showError(err);
+    });
+}
+
+function renderUsersTable() {
+  const body = document.getElementById('usersTableBody');
+  if (!body) return;
+  const list = state.users || [];
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="7" class="empty-state">ไม่พบผู้ใช้ในระบบ</td></tr>';
+    return;
+  }
+  body.innerHTML = list.map(function(u) {
+    const roleBadge = u.role === 'Administrator' ? '<span class="status-pill done">Administrator</span>' : '<span class="status-pill received">Staff / User</span>';
+    const statusBadge = u.active ? '<span class="status-pill done">เปิดใช้งาน</span>' : '<span class="status-pill cancel">ระงับ</span>';
+    return '<tr>' +
+      '<td><strong>' + esc(u.username) + '</strong></td>' +
+      '<td>' + esc(u.displayName) + '</td>' +
+      '<td>' + roleBadge + '</td>' +
+      '<td><strong style="color:#7c3aed;">' + esc(u.department || '― ทุกฝ่าย (Admin) ―') + '</strong></td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td style="font-size:13px; color:var(--muted);">' + esc(u.lastLoginAt || '-') + '</td>' +
+      '<td class="action-cell">' +
+        '<button class="secondary-button" type="button" onclick="openEditUserModal(\'' + escJs(u.username) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button>' +
+        (u.username !== (state.user && state.user.username) ? '<button class="secondary-button" type="button" style="border-color:#e53935;color:#e53935;" onclick="deleteUserItem(\'' + escJs(u.username) + '\')"><i data-lucide="trash-2"></i><span>ลบ</span></button>' : '') +
+      '</td>' +
+    '</tr>';
+  }).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function openAddUserModal() {
+  if (!checkSessionExpiration()) return;
+  const modal = document.getElementById('userEditModal');
+  const form = document.getElementById('userForm');
+  form.reset();
+  form.token.value = state.token;
+  form.username.readOnly = false;
+  form.password.required = true;
+  form.password.placeholder = 'กรอกรหัสผ่านสำหรับผู้ใช้ใหม่';
+  form.role.value = 'User';
+  form.department.value = '';
+  form.active.value = 'TRUE';
+  document.getElementById('userEditTitle').textContent = 'เพิ่มผู้ใช้ใหม่ในระบบ';
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function openEditUserModal(username) {
+  if (!checkSessionExpiration()) return;
+  const u = (state.users || []).find(function(item) { return item.username === username; });
+  if (!u) {
+    toast('ไม่พบข้อมูลผู้ใช้');
+    return;
+  }
+  const modal = document.getElementById('userEditModal');
+  const form = document.getElementById('userForm');
+  form.token.value = state.token;
+  form.username.value = u.username;
+  form.username.readOnly = true;
+  form.password.required = false;
+  form.password.value = '';
+  form.password.placeholder = 'ว่างไว้ถ้าไม่เปลี่ยนรหัสผ่าน';
+  form.displayName.value = u.displayName || u.username;
+  form.role.value = u.role || 'User';
+  form.department.value = u.department || '';
+  form.active.value = u.active ? 'TRUE' : 'FALSE';
+  document.getElementById('userEditTitle').textContent = 'แก้ไขข้อมูลผู้ใช้: ' + u.username;
+  modal.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeUserEditModal() {
+  document.getElementById('userEditModal').classList.add('hidden');
+}
+
+function submitUserForm(event) {
+  event.preventDefault();
+  if (!checkSessionExpiration()) return;
+  const form = event.currentTarget;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  setBusy(submitBtn, true);
+  showLoading('กำลังบันทึกบัญชีผู้ใช้...');
+  const payload = {
+    token: state.token,
+    username: form.username.value.trim(),
+    password: form.password.value.trim(),
+    displayName: form.displayName.value.trim(),
+    role: form.role.value,
+    department: form.department.value,
+    active: form.active.value
+  };
+  serverCall('saveUser', payload)
+    .then(function(result) {
+      hideLoading();
+      setBusy(submitBtn, false);
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'บันทึกข้อมูลผู้ใช้ไม่สำเร็จ');
+      showSuccessPopup(result.message || 'บันทึกข้อมูลผู้ใช้เรียบร้อย');
+      closeUserEditModal();
+      state.users = result.users || [];
+      renderUsersTable();
+    })
+    .catch(function(err) {
+      hideLoading();
+      setBusy(submitBtn, false);
+      showError(err);
+    });
+}
+
+function deleteUserItem(username) {
+  if (!checkSessionExpiration()) return;
+  if (!confirm('ยืนยันลบผู้ใช้ "' + username + '" ออกจากระบบ?')) return;
+  showLoading('กำลังลบผู้ใช้...');
+  serverCall('deleteUser', { token: state.token, username: username })
+    .then(function(result) {
+      hideLoading();
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'ลบผู้ใช้ไม่สำเร็จ');
+      showSuccessPopup(result.message || 'ลบผู้ใช้เรียบร้อย');
+      state.users = result.users || [];
+      renderUsersTable();
+    })
+    .catch(function(err) {
+      hideLoading();
+      showError(err);
+    });
+}
+window.openUsersModal = openUsersModal;
+window.closeUsersModal = closeUsersModal;
+window.loadUsers = loadUsers;
+window.openAddUserModal = openAddUserModal;
+window.openEditUserModal = openEditUserModal;
+window.closeUserEditModal = closeUserEditModal;
+window.deleteUserItem = deleteUserItem;
 
 function buildLocalStats(reports) {
   return reports.reduce(function(stats, report) {

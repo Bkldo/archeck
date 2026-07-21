@@ -223,6 +223,7 @@
               <p id="adminUserLabel"></p>
             </div>
             <div class="admin-actions">
+              <button id="usersButton" class="secondary-button" type="button" style="display:none;"><i data-lucide="users"></i><span>จัดการผู้ใช้และฝ่าย</span></button>
               <button id="logsButton" class="secondary-button" type="button" style="display:none;"><i data-lucide="history"></i><span>ประวัติการใช้งาน</span></button>
               <button id="settingsButton" class="secondary-button" type="button"><i data-lucide="settings"></i><span>ตั้งค่า</span></button>
               <button id="logoutButton" class="ghost-button" type="button"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button>
@@ -257,6 +258,7 @@
               <div class="filter-row">
                 <input id="adminSearchInput" type="search" placeholder="ค้นหารายการ">
                 <select id="adminStatusFilter"></select>
+                <select id="adminDeptFilter" aria-label="กรองตามฝ่ายรับผิดชอบ"><option value="all">ทุกฝ่ายรับผิดชอบ</option></select>
               </div>
             </div>
             <div class="table-wrap">
@@ -531,6 +533,111 @@
         <span class="muted" style="margin-right: auto; font-size: 13px;"><i data-lucide="shield-alert" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>เฉพาะ Administrator ดูได้คนเดียว | เก็บประวัติย้อนหลัง 30 วัน</span>
         <button class="primary-button" data-close-logs type="button">ปิดหน้าต่าง</button>
       </div>
+    </div>
+  </div>
+
+  <div id="usersModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="usersTitle">
+    <div class="modal-card users-card" style="max-width: 860px;">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">User & Department Management</p>
+          <h3 id="usersTitle">จัดการบัญชีผู้ใช้และฝ่ายที่รับผิดชอบ</h3>
+          <p style="margin:4px 0 0; color:var(--muted); font-size:13px;">กำหนดสิทธิ์ผู้ดูแลระบบ (Administrator) หรือบัญชีเจ้าหน้าที่ประจำฝ่ายเพื่อแยกการมองเห็นและแก้ไขเรื่องแจ้ง</p>
+        </div>
+        <button class="icon-button" data-close-users type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <div class="filter-row" style="margin-bottom: 16px; justify-content: space-between;">
+        <button class="primary-button" id="addUserBtn" type="button" onclick="openAddUserModal()"><i data-lucide="user-plus"></i><span>เพิ่มผู้ใช้ใหม่</span></button>
+        <button class="secondary-button" id="refreshUsersBtn" type="button" onclick="loadUsers()"><i data-lucide="refresh-cw"></i><span>รีเฟรช</span></button>
+      </div>
+      <div class="table-wrap users-table-wrap" style="max-height: 520px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:130px;">ชื่อผู้ใช้</th>
+              <th style="width:160px;">ชื่อที่แสดง</th>
+              <th style="width:120px;">สิทธิ์ (Role)</th>
+              <th style="width:160px;">ฝ่ายที่รับผิดชอบ</th>
+              <th style="width:90px;">สถานะ</th>
+              <th style="width:140px;">เข้าสู่ระบบล่าสุด</th>
+              <th style="width:130px;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+      <div class="form-actions right" style="margin-top: 16px; align-items: center;">
+        <span class="muted" style="margin-right: auto; font-size: 13px;"><i data-lucide="shield-alert" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>เฉพาะ Administrator ดูและจัดการได้</span>
+        <button class="primary-button" data-close-users type="button">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="userEditModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="userEditTitle" style="z-index: 60;">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Account Settings</p>
+          <h3 id="userEditTitle">เพิ่ม/แก้ไขผู้ใช้งาน</h3>
+        </div>
+        <button class="icon-button" data-close-user-edit type="button" aria-label="ปิด"><i data-lucide="x"></i></button>
+      </div>
+      <form id="userForm" class="stacked-form">
+        <input type="hidden" name="token">
+        <div class="field-grid two">
+          <label>ชื่อผู้ใช้ (Username)
+            <input type="text" name="username" required autocomplete="off" placeholder="เช่น yotha, tetsakit">
+          </label>
+          <label>รหัสผ่าน (Password)
+            <input type="password" name="password" autocomplete="new-password" placeholder="ว่างไว้ถ้าไม่เปลี่ยนรหัสผ่าน">
+          </label>
+        </div>
+        <label>ชื่อที่แสดง (Display Name)
+          <input type="text" name="displayName" required placeholder="เช่น เจ้าหน้าที่ฝ่ายโยธา">
+        </label>
+        <div class="field-grid two">
+          <label>สิทธิ์การใช้งาน (Role)
+            <select name="role" id="userRoleSelect">
+              <option value="User">เจ้าหน้าที่ประจำฝ่าย (User / Staff)</option>
+              <option value="Administrator">ผู้ดูแลระบบสูงสุด (Administrator)</option>
+            </select>
+          </label>
+          <label>ฝ่ายที่รับผิดชอบ
+            <select name="department" id="userDeptSelect">
+              <option value="">― ไม่ระบุ / ทุกฝ่าย ―</option>
+              <option>ฝ่ายทะเบียน</option>
+              <option>ฝ่ายปกครอง</option>
+              <option>ฝ่ายโยธา</option>
+              <option>ฝ่ายรายได้</option>
+              <option>ฝ่ายสิ่งแวดล้อมฯ</option>
+              <option>ฝ่ายเทศกิจ</option>
+              <option>ฝ่ายรักษาฯ</option>
+              <option>ฝ่ายการคลัง</option>
+              <option>ฝ่ายการศึกษา</option>
+              <option>ฝ่ายพัฒนาชุมชนฯ</option>
+            </select>
+          </label>
+        </div>
+        <label>สถานะการใช้งาน
+          <select name="active">
+            <option value="TRUE">เปิดใช้งาน (Active)</option>
+            <option value="FALSE">ระงับการใช้งาน (Inactive)</option>
+          </select>
+        </label>
+        <div class="notice-box" style="margin-top: 8px;">
+          <i data-lucide="info"></i>
+          <div>
+            <p style="font-size:13px; margin:0; line-height: 1.4;">
+              <b>เจ้าหน้าที่ประจำฝ่าย:</b> จะเห็นและแก้ไขได้เฉพาะเรื่องที่ <i>ยังไม่ระบุฝ่ายรับผิดชอบ</i> และเรื่องที่ <i>ตรงกับฝ่ายของตนเอง</i><br>
+              <b>Administrator:</b> จะเห็นและแก้ไขข้อมูลได้ <i>ทุกฝ่าย</i> ในระบบ
+            </p>
+          </div>
+        </div>
+        <div class="form-actions right">
+          <button class="secondary-button" data-close-user-edit type="button">ยกเลิก</button>
+          <button class="primary-button" type="submit"><i data-lucide="save"></i><span>บันทึกบัญชีผู้ใช้</span></button>
+        </div>
+      </form>
     </div>
   </div>
 
