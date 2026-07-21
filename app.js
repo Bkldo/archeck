@@ -16,7 +16,7 @@ window.__INITIAL_PAGE__ = new URLSearchParams(window.location.search).get('page'
 window.__INITIAL_EDIT__ = new URLSearchParams(window.location.search).get('edit') || '';
 const state = {
   token: sessionStorage.getItem('fieldReportToken') || '',
-  user: null,
+  user: (function() { try { var u = sessionStorage.getItem('fieldReportUser'); return u ? JSON.parse(u) : null; } catch (e) { return null; } })(),
   settings: {},
   statuses: [],
   priorities: [],
@@ -1182,6 +1182,7 @@ function submitLogin(event) {
       state.adminReports = result.reports || [];
       state.settings = result.settings || state.settings;
       sessionStorage.setItem('fieldReportToken', state.token);
+      if (state.user) sessionStorage.setItem('fieldReportUser', JSON.stringify(state.user));
       const expireTime = Date.now() + 3600000;
       sessionStorage.setItem('fieldReportTokenExpire', expireTime.toString());
       applySettings();
@@ -1212,7 +1213,17 @@ function restoreAdminSession() {
   serverCall('getAdminReports', { token: state.token })
     .then(function(result) {
       if (!result || !result.ok) throw new Error('session หมดอายุ');
-      state.user = { displayName: 'ผู้ดูแลระบบ' };
+      if (result.user) {
+        state.user = result.user;
+        sessionStorage.setItem('fieldReportUser', JSON.stringify(result.user));
+      } else if (!state.user) {
+        try {
+          var saved = sessionStorage.getItem('fieldReportUser');
+          state.user = saved ? JSON.parse(saved) : { displayName: 'ผู้ดูแลระบบ', role: 'Administrator' };
+        } catch(e) {
+          state.user = { displayName: 'ผู้ดูแลระบบ', role: 'Administrator' };
+        }
+      }
       state.adminReports = result.reports || [];
       state.settings = result.settings || state.settings;
       applySettings();
@@ -1241,13 +1252,11 @@ function renderAdmin(stats) {
   document.getElementById('loginPanel').classList.add('hidden');
   document.getElementById('adminPanel').classList.remove('hidden');
   let userLabel = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
-  if (state.user && state.user.department) {
+  if (state.user && state.user.department && state.user.displayName !== state.user.department) {
     userLabel += ' (' + state.user.department + ')';
   }
-  if (state.user && state.user.role === 'Administrator') {
+  if (state.user && state.user.role === 'Administrator' && state.user.displayName !== 'ผู้ดูแลระบบ') {
     userLabel += ' [ผู้ดูแลระบบสูงสุด]';
-  } else if (state.user && state.user.department) {
-    userLabel += ' [สิทธิ์: ' + state.user.department + ' และเรื่องที่ยังไม่ระบุฝ่าย]';
   }
   document.getElementById('adminUserLabel').textContent = userLabel;
   const settingsBtn = document.getElementById('settingsButton');
@@ -1478,6 +1487,7 @@ function logoutAdmin(showMessage) {
   state.user = null;
   state.adminReports = [];
   sessionStorage.removeItem('fieldReportToken');
+  sessionStorage.removeItem('fieldReportUser');
   sessionStorage.removeItem('fieldReportTokenExpire');
   if (sessionStorage.getItem('activeViewId') === 'adminView') {
     sessionStorage.setItem('activeViewId', 'reportView');
