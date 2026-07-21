@@ -448,10 +448,12 @@ function renderPublicReports() {
 }
 
 function renderReportCard(report) {
+  var respDeptText = (report.respDepartment && report.respDepartment !== '-' && report.respDepartment !== '― ไม่ระบุ / อื่นๆ ―' && report.respDepartment !== 'ไม่ระบุ' && report.respDepartment !== 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข') ? report.respDepartment : 'ยังไม่ระบุฝ่าย';
+  var respDeptStyle = (respDeptText === 'ยังไม่ระบุฝ่าย') ? 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0;' : 'background:#f3e8ff; color:#7c3aed; border-color:#d8b4fe;';
   return '<article class="report-card" onclick="openReportDetail(\'' + escJs(report.id) + '\')" style="cursor:pointer">' +
     '<div class="report-image-pair">' + imageSlot('ก่อน', report.beforeImageUrl) + imageSlot('หลัง', report.afterImageUrl) + '</div>' +
     '<div class="report-card-body">' +
-      '<div class="card-meta"><span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></div>' +
+      '<div class="card-meta"><span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span><span class="status-pill" style="' + respDeptStyle + '">' + esc(respDeptText) + '</span></div>' +
       '<h4>' + esc(report.locationName) + '</h4>' +
       '<p>' + esc(report.problem) + '</p>' +
       '<p><strong>' + esc(report.id) + '</strong> · ' + esc(report.category) + '</p>' +
@@ -491,10 +493,13 @@ function openReportDetail(id) {
   imgHtml += detailImageBox('ภาพหลังแก้ไข', report.afterImageUrl);
   imgHtml += '</div>';
   document.getElementById('detailImages').innerHTML = imgHtml;
+  var respDeptText = (report.respDepartment && report.respDepartment !== '-' && report.respDepartment !== '― ไม่ระบุ / อื่นๆ ―' && report.respDepartment !== 'ไม่ระบุ' && report.respDepartment !== 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข') ? report.respDepartment : 'ยังไม่ระบุฝ่าย';
+  var respDeptStyle = (respDeptText === 'ยังไม่ระบุฝ่าย') ? 'background:#f1f5f9; color:#64748b; border-color:#e2e8f0;' : 'background:#f3e8ff; color:#7c3aed; border-color:#d8b4fe;';
   var fields = [
     ['รหัสเรื่อง', report.id],
     ['สถานะ', '<span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span>'],
     ['ความเร่งด่วน', '<span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span>'],
+    ['ฝ่ายรับผิดชอบแก้ไข', '<span class="status-pill" style="' + respDeptStyle + '">' + esc(respDeptText) + '</span>'],
     ['ประเภท', report.category],
     ['สถานที่', report.locationName],
     ['รายละเอียดปัญหา', report.problem],
@@ -502,7 +507,6 @@ function openReportDetail(id) {
     ['ชื่อผู้แจ้ง', report.reporterName],
     ['เบอร์โทรศัพท์ผู้แจ้ง', report.phone],
     ['ผู้รับผิดชอบแก้ไข', report.assignedTo],
-    ['ฝ่ายรับผิดชอบแก้ไข', report.respDepartment],
     ['ผลดำเนินการ/หมายเหตุ', report.adminNote],
     ['วันที่แก้ไขเสร็จ', report.completedAt],
     ['ระยะเวลาในการแก้ไข', getReportResolutionText(report)]
