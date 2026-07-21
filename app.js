@@ -467,6 +467,31 @@ function imageSlot(label, url) {
   return '<div class="image-slot"><b>' + esc(label) + '</b><span>ยังไม่มีภาพ</span></div>';
 }
 
+function renderTimelineHtml(timeline) {
+  if (!timeline || !timeline.length) return '';
+  var html = '<div class="timeline-section" style="margin-top:20px; padding-top:16px; border-top:1px dashed var(--line); width:100%;">' +
+    '<h4 style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:12px; display:flex; align-items:center; gap:6px;"><i data-lucide="history" style="width:16px; height:16px; color:#7c3aed;"></i><span>ประวัติการดำเนินการ (Timeline)</span></h4>' +
+    '<div class="timeline-list" style="position:relative; padding-left:20px; border-left:2px solid #e2e8f0; margin-left:6px; display:flex; flex-direction:column; gap:14px;">';
+  timeline.forEach(function(item) {
+    var ts = item.timestamp || '';
+    var st = item.status || '';
+    var nt = item.note || '';
+    var img = item.imageUrl || '';
+    var by = item.updatedBy || '';
+    html += '<div class="timeline-item" style="position:relative;">' +
+      '<div style="position:absolute; left:-25px; top:2px; width:10px; height:10px; border-radius:50%; background:#7c3aed; border:2px solid #fff; box-shadow:0 0 0 2px #d8b4fe;"></div>' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:4px;">' +
+        '<span class="status-pill ' + statusClass(st) + '" style="font-size:12px; padding:2px 8px;">' + esc(st) + '</span>' +
+        '<span style="font-size:12px; color:var(--muted);">' + esc(ts) + (by ? ' · โดย ' + esc(by) : '') + '</span>' +
+      '</div>' +
+      (nt ? '<p style="font-size:14px; color:var(--ink); margin:4px 0 0; background:#f8fafc; padding:8px 12px; border-radius:6px; border:1px solid #f1f5f9;">' + esc(nt) + '</p>' : '') +
+      (img ? '<div style="margin-top:6px;"><img src="' + escAttr(img) + '" alt="ภาพความคืบหน้า" style="max-height:120px; border-radius:6px; cursor:pointer; border:1px solid #e2e8f0;" onclick="openLightbox(\'' + escAttr(img) + '\', event)"></div>' : '') +
+    '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
 function openReportDetail(id) {
   var report = state.reports.find(function(r) { return r.id === id; });
   if (!report && state.adminReports.length) report = state.adminReports.find(function(r) { return r.id === id; });
@@ -520,6 +545,7 @@ function openReportDetail(id) {
     bodyHtml += '<div class="detail-field"><dt>' + esc(f[0]) + '</dt><dd>' + (isHtml ? val : esc(val)) + '</dd></div>';
   });
   bodyHtml += '</dl>';
+  bodyHtml += renderTimelineHtml(report.timeline);
   document.getElementById('detailBody').innerHTML = bodyHtml;
   var actionsDiv = document.getElementById('detailActions');
   if (!actionsDiv) {
@@ -1395,13 +1421,14 @@ function openEdit(id) {
       form.respDepartment.value = report.respDepartment || '';
     }
   }
-  form.adminNote.value = report.adminNote || '';
+  form.adminNote.value = (report.status === 'กำลังดำเนินการ') ? '' : (report.adminNote || '');
   form.afterImage.value = '';
   document.getElementById('editTitle').textContent = report.id + ' · ' + report.locationName;
   var problemEl = document.getElementById('editProblem');
   if (problemEl) problemEl.textContent = 'ปัญหา: ' + (report.problem || '-');
   document.getElementById('editPreview').innerHTML = '<div class="preview-box">' + (report.beforeImageUrl ? '<img src="' + escAttr(report.beforeImageUrl) + '" alt="ภาพก่อนแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.beforeImageUrl) + '\', event)">' : '') + '<p>ก่อนแก้ไข</p></div>' +
-    '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.afterImageUrl) + '\', event)">' : '') + '<p>หลังแก้ไข</p></div>';
+    '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.afterImageUrl) + '\', event)">' : '') + '<p>หลังแก้ไข (ล่าสุด)</p></div>' +
+    (report.timeline && report.timeline.length ? '<div style="grid-column: 1 / -1; width: 100%; margin-top: 10px;">' + renderTimelineHtml(report.timeline) + '</div>' : '');
   modal.classList.remove('hidden');
   if (window.lucide) lucide.createIcons();
 }
