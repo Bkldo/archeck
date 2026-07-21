@@ -402,7 +402,7 @@ function populateStatusFilters() {
   if (mapStatusSelect) mapStatusSelect.innerHTML = publicSelect.innerHTML;
   const editStatus = document.querySelector('#editForm [name="status"]');
   const editPriority = document.querySelector('#editForm [name="priority"]');
-  editStatus.innerHTML = state.statuses.map(function(s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+  editStatus.innerHTML = state.statuses.filter(function(s) { return s !== 'รับเรื่องแล้ว'; }).map(function(s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
   editPriority.innerHTML = state.priorities.map(function(p) { return '<option value="' + esc(p) + '">' + esc(p) + '</option>'; }).join('');
 }
 
@@ -1381,7 +1381,7 @@ function openEdit(id) {
   const form = document.getElementById('editForm');
   form.token.value = state.token;
   form.reportId.value = report.id;
-  form.status.value = report.status;
+  form.status.value = (report.status === 'รับเรื่องแล้ว' || !report.status) ? 'กำลังดำเนินการ' : report.status;
   form.priority.value = report.priority || 'ปกติ';
   form.assignedTo.value = report.assignedTo || '';
   if (form.respDepartment) {
