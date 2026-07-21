@@ -467,7 +467,7 @@ function imageSlot(label, url) {
   return '<div class="image-slot"><b>' + esc(label) + '</b><span>ยังไม่มีภาพ</span></div>';
 }
 
-function renderTimelineHtml(timeline) {
+function renderTimelineHtml(timeline, report) {
   if (!timeline || !timeline.length) return '';
   var html = '<div class="timeline-section" style="margin-top:20px; padding-top:16px; border-top:1px dashed var(--line); width:100%;">' +
     '<h4 style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:12px; display:flex; align-items:center; gap:6px;"><i data-lucide="history" style="width:16px; height:16px; color:#7c3aed;"></i><span>ประวัติการดำเนินการ (Timeline)</span></h4>' +
@@ -478,6 +478,13 @@ function renderTimelineHtml(timeline) {
     var nt = item.note || '';
     var img = item.imageUrl || '';
     var by = item.updatedBy || '';
+    if (by === 'ผู้ดูแลระบบ' || by === 'Administrator' || by === 'ประวัติก่อนหน้า' || !by) {
+      if (report && (report.assignedTo || report.respDepartment)) {
+        by = report.assignedTo || report.respDepartment;
+      } else if (by === 'ผู้ดูแลระบบ' || by === 'Administrator') {
+        by = 'ไม่ระบุผู้รับผิดชอบแก้ไข';
+      }
+    }
     html += '<div class="timeline-item" style="position:relative;">' +
       '<div style="position:absolute; left:-25px; top:2px; width:10px; height:10px; border-radius:50%; background:#7c3aed; border:2px solid #fff; box-shadow:0 0 0 2px #d8b4fe;"></div>' +
       '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:4px;">' +
@@ -545,7 +552,7 @@ function openReportDetail(id) {
     bodyHtml += '<div class="detail-field"><dt>' + esc(f[0]) + '</dt><dd>' + (isHtml ? val : esc(val)) + '</dd></div>';
   });
   bodyHtml += '</dl>';
-  bodyHtml += renderTimelineHtml(report.timeline);
+  bodyHtml += renderTimelineHtml(report.timeline, report);
   document.getElementById('detailBody').innerHTML = bodyHtml;
   var actionsDiv = document.getElementById('detailActions');
   if (!actionsDiv) {
@@ -1428,7 +1435,7 @@ function openEdit(id) {
   if (problemEl) problemEl.textContent = 'ปัญหา: ' + (report.problem || '-');
   document.getElementById('editPreview').innerHTML = '<div class="preview-box">' + (report.beforeImageUrl ? '<img src="' + escAttr(report.beforeImageUrl) + '" alt="ภาพก่อนแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.beforeImageUrl) + '\', event)">' : '') + '<p>ก่อนแก้ไข</p></div>' +
     '<div class="preview-box">' + (report.afterImageUrl ? '<img src="' + escAttr(report.afterImageUrl) + '" alt="ภาพหลังแก้ไข" style="cursor:pointer" onclick="openLightbox(\'' + escAttr(report.afterImageUrl) + '\', event)">' : '') + '<p>หลังแก้ไข (ล่าสุด)</p></div>' +
-    (report.timeline && report.timeline.length ? '<div style="grid-column: 1 / -1; width: 100%; margin-top: 10px;">' + renderTimelineHtml(report.timeline) + '</div>' : '');
+    (report.timeline && report.timeline.length ? '<div style="grid-column: 1 / -1; width: 100%; margin-top: 10px;">' + renderTimelineHtml(report.timeline, report) + '</div>' : '');
   modal.classList.remove('hidden');
   if (window.lucide) lucide.createIcons();
 }
