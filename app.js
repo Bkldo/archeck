@@ -524,12 +524,20 @@ function openReportDetail(id) {
     actionsDiv.className = 'detail-actions';
     document.querySelector('#detailModal .modal-card').appendChild(actionsDiv);
   }
+  var canEdit = true;
+  if (state.user && state.user.role !== 'Administrator') {
+    var respDept = report.respDepartment || '';
+    var isUnassigned = !respDept || respDept === '-' || respDept === 'ไม่ระบุ' || respDept === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || respDept === '― ไม่ระบุ / อื่นๆ ―';
+    if (!isUnassigned && respDept !== (state.user.department || '')) canEdit = false;
+  }
   var actionsHtml = '';
   if (state.user && state.user.role === 'Administrator') {
     actionsHtml += '<button class="secondary-button" type="button" style="padding: 10px 18px; border-color:#e53935; color:#e53935;" onclick="closeDetailModal(); deleteReportItem(\'' + escJs(report.id) + '\')"><i data-lucide="trash-2"></i><span>ลบเรื่องนี้</span></button>';
   }
-  if (report.status === 'รับเรื่องแล้ว') {
+  if (canEdit && report.status === 'รับเรื่องแล้ว') {
     actionsHtml += '<button class="primary-button" type="button" style="padding: 10px 18px;" onclick="closeDetailModal(); openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข / อัปเดตสถานะการแก้ไข</span></button>';
+  } else if (!canEdit) {
+    actionsHtml += '<span class="status-pill cancel" style="font-size:13px; align-self: center;">ดูข้อมูลเท่านั้น (อยู่ในความรับผิดชอบของ ' + esc(report.respDepartment || 'ฝ่ายอื่น') + ')</span>';
   }
   if (actionsHtml) {
     actionsDiv.innerHTML = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">' + actionsHtml + '</div>';
@@ -1276,7 +1284,7 @@ function populateAdminDeptFilter() {
       depts.map(function(d) { return '<option value="' + escAttr(d) + '">' + esc(d) + '</option>'; }).join('') +
       '<option value="unassigned">― ยังไม่ระบุฝ่ายรับผิดชอบ ―</option>';
   } else if (state.user && state.user.department) {
-    sel.innerHTML = '<option value="all">ทั้งหมด (' + esc(state.user.department) + ' + ยังไม่ระบุ)</option>' +
+    sel.innerHTML = '<option value="all">ทั้งหมด</option>' +
       '<option value="my">เฉพาะรายการของ ' + esc(state.user.department) + '</option>' +
       '<option value="unassigned">เฉพาะรายการที่ยังไม่ระบุฝ่าย</option>';
   } else {
@@ -1298,6 +1306,25 @@ function renderAdminTable() {
     return;
   }
   body.innerHTML = rows.map(function(report) {
+    var canEdit = false;
+    if (state.user && state.user.role === 'Administrator') {
+      canEdit = true;
+    } else if (state.user && state.user.department) {
+      var respDept = report.respDepartment || '';
+      var isUnassigned = !respDept || respDept === '-' || respDept === 'ไม่ระบุ' || respDept === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || respDept === '― ไม่ระบุ / อื่นๆ ―';
+      if (isUnassigned || respDept === state.user.department) canEdit = true;
+    } else {
+      canEdit = true;
+    }
+    var actionButtons = '<button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button>';
+    if (canEdit) {
+      actionButtons += '<button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button>';
+    } else {
+      actionButtons += '<span class="status-pill cancel" style="font-size:12px; padding:4px 8px;">ดูเท่านั้น</span>';
+    }
+    if (state.user && state.user.role === 'Administrator') {
+      actionButtons += '<button class="secondary-button" type="button" style="border-color:#e53935;color:#e53935;" onclick="deleteReportItem(\'' + escJs(report.id) + '\')"><i data-lucide="trash-2"></i><span>ลบ</span></button>';
+    }
     return '<tr>' +
       '<td><strong>' + esc(report.id) + '</strong><div class="row-sub">' + esc(report.createdAt || report.reportDate) + '</div></td>' +
       '<td><span class="status-pill ' + statusClass(report.status) + '">' + esc(report.status) + '</span></td>' +
@@ -1305,7 +1332,7 @@ function renderAdminTable() {
       '<td><div class="row-title">' + esc(report.locationName) + '</div><div class="row-sub">' + esc(report.problem) + '</div></td>' +
       '<td><span class="status-pill ' + priorityClass(report.priority) + '">' + esc(report.priority) + '</span></td>' +
       '<td><strong style="color:var(--ink);">' + esc(report.assignedTo || '-') + '</strong>' + (report.respDepartment ? '<div class="row-sub" style="color:#7c3aed;">' + esc(report.respDepartment) + '</div>' : '') + '</td>' +
-      '<td class="action-cell"><button class="secondary-button" type="button" onclick="openReportDetail(\'' + escJs(report.id) + '\')"><i data-lucide="eye"></i><span>ดู</span></button><button class="secondary-button" type="button" onclick="openEdit(\'' + escJs(report.id) + '\')"><i data-lucide="pencil"></i><span>แก้ไข</span></button>' + (state.user && state.user.role === 'Administrator' ? '<button class="secondary-button" type="button" style="border-color:#e53935;color:#e53935;" onclick="deleteReportItem(\'' + escJs(report.id) + '\')"><i data-lucide="trash-2"></i><span>ลบ</span></button>' : '') + '</td>' +
+      '<td class="action-cell">' + actionButtons + '</td>' +
     '</tr>';
   }).join('');
   if (window.lucide) lucide.createIcons();
@@ -1324,6 +1351,15 @@ function openEdit(id) {
   if (!report) {
     toast('ไม่พบข้อมูลเรื่องแจ้งรหัส ' + id);
     return;
+  }
+  if (state.user && state.user.role !== 'Administrator') {
+    var respDept = report.respDepartment || '';
+    var isUnassigned = !respDept || respDept === '-' || respDept === 'ไม่ระบุ' || respDept === 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข' || respDept === '― ไม่ระบุ / อื่นๆ ―';
+    if (!isUnassigned && respDept !== (state.user.department || '')) {
+      toast('ไม่มีสิทธิ์แก้ไขรายการนี้เนื่องจากอยู่ในความรับผิดชอบของ "' + respDept + '" (สามารถดูข้อมูลได้เท่านั้น)', true);
+      openReportDetail(id);
+      return;
+    }
   }
   if (window.history && window.history.replaceState) {
     const url = new URL(window.location.href);
