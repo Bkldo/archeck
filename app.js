@@ -2158,6 +2158,15 @@ function renderStatsView() {
   const byCat = {};
   const fastestMap = {};
   
+  const mainDepartments = [
+    'ฝ่ายทะเบียน', 'ฝ่ายปกครอง', 'ฝ่ายโยธา', 'ฝ่ายรายได้', 'ฝ่ายสิ่งแวดล้อมฯ',
+    'ฝ่ายเทศกิจ', 'ฝ่ายรักษาฯ', 'ฝ่ายการคลัง', 'ฝ่ายการศึกษา', 'ฝ่ายพัฒนาชุมชนฯ'
+  ];
+  const reportersByDept = {};
+  mainDepartments.forEach(function(d) {
+    reportersByDept[d] = {};
+  });
+  
   reports.forEach(function(r) {
     const status = r.status || 'รับเรื่องแล้ว';
     const dept = r.department || 'ไม่ระบุฝ่าย/หน่วยงาน';
@@ -2213,6 +2222,12 @@ function renderStatsView() {
     if (status === 'ส่งต่อ/ประสานหน่วยงานอื่น') byResp[resp].forwarded++;
     
     byCat[cat] = (byCat[cat] || 0) + 1;
+
+    const reporterName = String(r.reporterName || '').trim();
+    const rDept = String(r.department || '').trim();
+    if (reporterName && mainDepartments.indexOf(rDept) !== -1) {
+      reportersByDept[rDept][reporterName] = (reportersByDept[rDept][reporterName] || 0) + 1;
+    }
   });
   
   setText('statsTotalCount', total);
@@ -2382,6 +2397,54 @@ function renderStatsView() {
     }).join('');
   }
 
+  const topReportersContainer = document.getElementById('statsTopReportersContainer');
+  if (topReportersContainer) {
+    let topReportersHTML = '';
+    mainDepartments.forEach(function(deptName) {
+      const reporterMap = reportersByDept[deptName];
+      const reporterKeys = Object.keys(reporterMap).sort(function(a, b) {
+        return reporterMap[b] - reporterMap[a];
+      }).slice(0, 3);
+
+      let listHTML = '';
+      if (reporterKeys.length === 0) {
+        listHTML = '<p style="color: var(--muted); font-size: 13px; margin: 0; text-align: center; padding: 12px 0;">ยังไม่มีข้อมูลผู้แจ้ง</p>';
+      } else {
+        listHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+        reporterKeys.forEach(function(rName, idx) {
+          const count = reporterMap[rName];
+          let rankIcon = '<div style="width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">' + (idx+1) + '</div>';
+          
+          if (idx === 0) {
+            rankIcon = '<div style="width: 24px; height: 24px; border-radius: 50%; background: #fef08a; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;"><i data-lucide="award" style="width: 14px; height: 14px;"></i></div>';
+          } else if (idx === 1) {
+            rankIcon = '<div style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; color: #475569; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;"><i data-lucide="award" style="width: 14px; height: 14px;"></i></div>';
+          } else if (idx === 2) {
+            rankIcon = '<div style="width: 24px; height: 24px; border-radius: 50%; background: #ffedd5; color: #9a3412; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;"><i data-lucide="award" style="width: 14px; height: 14px;"></i></div>';
+          }
+
+          listHTML += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #f8fafc; border: 1px solid var(--line); border-radius: 6px;">' +
+            '<div style="display: flex; align-items: center; gap: 8px;">' +
+              rankIcon +
+              '<span style="font-weight: 600; font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="' + esc(rName) + '">' + esc(rName) + '</span>' +
+            '</div>' +
+            '<div style="font-size: 12px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 999px;">' + count + ' เรื่อง</div>' +
+          '</div>';
+        });
+        listHTML += '</div>';
+      }
+
+      topReportersHTML += '<div class="panel" style="background: #fff; padding: 16px; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">' +
+        '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">' +
+          '<div style="width: 8px; height: 8px; background: var(--brand); border-radius: 50%;"></div>' +
+          '<h5 style="margin: 0; font-size: 15px; color: var(--brand-dark);">' + esc(deptName) + '</h5>' +
+        '</div>' +
+        listHTML +
+      '</div>';
+    });
+    topReportersContainer.innerHTML = topReportersHTML;
+  }
+
   function renderRateTable(bodyId, map, hideDuration) {
     const el = document.getElementById(bodyId);
     if (!el) return;
@@ -2465,8 +2528,3 @@ function renderStatsView() {
   if (window.lucide) lucide.createIcons();
 }
 window.renderStatsView = renderStatsView;
-
-
-
-
-
