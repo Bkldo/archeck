@@ -245,11 +245,9 @@ function loadBootstrap(isManual) {
       state.settings = result.settings || {};
       state.statuses = result.statuses || [];
       state.priorities = result.priorities || [];
-      state.reports = result.reports || [];
       applySettings();
       populateStatusFilters();
-      renderAll(result.stats || {});
-      if (state.token) restoreAdminSession();
+      
       const initial = String(window.__INITIAL_PAGE__ || '').toLowerCase();
       const initialEdit = String(window.__INITIAL_EDIT__ || '');
       const savedView = sessionStorage.getItem('activeViewId');
@@ -269,6 +267,16 @@ function loadBootstrap(isManual) {
           setTimeout(function() { toggleMapFullscreen(true); }, 200);
         }
       }
+
+      // Now fetch reports asynchronously
+      return serverCall('listReports');
+    })
+    .then(function(result) {
+      if (manual) hideLoading();
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดข้อมูลรายงานไม่สำเร็จ');
+      state.reports = result.reports || [];
+      renderAll(result.stats || {});
+      if (state.token) restoreAdminSession();
       if (manual) showSuccessPopup('โหลดข้อมูลล่าสุดเรียบร้อยแล้ว');
     })
     .catch(function(err) {
