@@ -57,13 +57,13 @@ async function serverCall(name) {
   await apiPostForm(action, payload);
   updateLoadingMessage('กำลังอัปเดตตารางข้อมูล...');
   if (action === 'createReport') {
-    const fresh = await apiJsonp('bootstrap', {});
+    const fresh = await apiJsonp('listReports', {});
     return { ok: fresh && fresh.ok !== false, message: 'ส่งเรื่องเรียบร้อย', report: fresh && fresh.reports && fresh.reports[0] ? fresh.reports[0] : null, reports: fresh.reports || [], stats: fresh.stats || {} };
   }
   if (action === 'updateReport') {
     const [admin, publicData] = await Promise.all([
       apiJsonp('getAdminReports', { token: payload.token }),
-      apiJsonp('bootstrap', {})
+      apiJsonp('listReports', {})
     ]);
     return {
       ok: admin && admin.ok !== false,
@@ -238,10 +238,10 @@ function loadBootstrap(isManual) {
   const manual = isManual === true || (isManual && isManual.type === 'click');
   setBusy(document.getElementById('refreshButton'), true);
   if (manual) showLoading('กำลังโหลดข้อมูลล่าสุด...');
+  
   serverCall('getBootstrapData')
     .then(function(result) {
-      if (manual) hideLoading();
-      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดข้อมูลไม่สำเร็จ');
+      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'โหลดข้อมูลระบบไม่สำเร็จ');
       state.settings = result.settings || {};
       state.statuses = result.statuses || [];
       state.priorities = result.priorities || [];
