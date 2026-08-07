@@ -366,8 +366,8 @@ function setupForms() {
   if (topMenuBtn2) topMenuBtn2.addEventListener('click', function() { toggleMapHeader(); });
   var topMenuBtn3 = document.getElementById('toggleMapHeaderBtnFooter');
   if (topMenuBtn3) topMenuBtn3.addEventListener('click', function() { toggleMapHeader(); });
-  document.getElementById('searchInput').addEventListener('input', function(e) { state.filters.publicSearch = e.target.value; renderPublicReports(); });
-  document.getElementById('statusFilter').addEventListener('change', function(e) { state.filters.publicStatus = e.target.value; renderPublicReports(); });
+  document.getElementById('searchInput').addEventListener('input', function(e) { state.publicCurrentPage = 1; state.filters.publicSearch = e.target.value; renderPublicReports(); });
+  document.getElementById('statusFilter').addEventListener('change', function(e) { state.publicCurrentPage = 1; state.filters.publicStatus = e.target.value; renderPublicReports(); });
   document.getElementById('adminSearchInput').addEventListener('input', function(e) { state.filters.adminSearch = e.target.value; renderAdminTable(); });
   document.getElementById('adminStatusFilter').addEventListener('change', function(e) { state.filters.adminStatus = e.target.value; renderAdminTable(); });
   var usersBtnEl = document.getElementById('usersButton');
@@ -449,11 +449,56 @@ function renderLatest() {
 function renderPublicReports() {
   const box = document.getElementById('publicReports');
   const empty = document.getElementById('emptyPublic');
+  const paginationBox = document.getElementById('publicPagination');
   const reports = filterReports(state.reports, state.filters.publicSearch, state.filters.publicStatus);
   empty.classList.toggle('hidden', reports.length > 0);
-  box.innerHTML = reports.map(renderReportCard).join('');
+  
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(reports.length / itemsPerPage);
+  
+  if (state.publicCurrentPage === undefined) state.publicCurrentPage = 1;
+  if (state.publicCurrentPage > totalPages && totalPages > 0) state.publicCurrentPage = totalPages;
+  if (state.publicCurrentPage < 1) state.publicCurrentPage = 1;
+  
+  const startIndex = (state.publicCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  
+  const pagedReports = reports.slice(startIndex, endIndex);
+  
+  box.innerHTML = pagedReports.map(renderReportCard).join('');
+  
+  if (totalPages > 1) {
+    let paginationHTML = '';
+    
+    paginationHTML += '<button class="secondary-button" ' + (state.publicCurrentPage === 1 ? 'disabled' : '') + ' onclick="setPublicPage(' + (state.publicCurrentPage - 1) + ')">&laquo; ก่อนหน้า</button>';
+    
+    let startPage = Math.max(1, state.publicCurrentPage - 2);
+    let endPage = Math.min(totalPages, state.publicCurrentPage + 2);
+    
+    if (startPage > 1) paginationHTML += '<button class="secondary-button" onclick="setPublicPage(1)">1</button>' + (startPage > 2 ? '<span style="color:var(--muted);">&hellip;</span>' : '');
+    for (let i = startPage; i <= endPage; i++) {
+       const activeStyle = (i === state.publicCurrentPage) ? 'background: var(--brand-dark); color: white; border-color: var(--brand-dark);' : '';
+       paginationHTML += '<button class="secondary-button" style="' + activeStyle + '" onclick="setPublicPage(' + i + ')">' + i + '</button>';
+    }
+    if (endPage < totalPages) paginationHTML += (endPage < totalPages - 1 ? '<span style="color:var(--muted);">&hellip;</span>' : '') + '<button class="secondary-button" onclick="setPublicPage(' + totalPages + ')">' + totalPages + '</button>';
+    
+    paginationHTML += '<button class="secondary-button" ' + (state.publicCurrentPage === totalPages ? 'disabled' : '') + ' onclick="setPublicPage(' + (state.publicCurrentPage + 1) + ')">ถัดไป &raquo;</button>';
+    
+    if(paginationBox) {
+       paginationBox.innerHTML = paginationHTML;
+       paginationBox.style.display = 'flex';
+    }
+  } else {
+    if(paginationBox) paginationBox.style.display = 'none';
+  }
+
   if (window.lucide) lucide.createIcons();
 }
+
+window.setPublicPage = function(page) {
+   state.publicCurrentPage = page;
+   renderPublicReports();
+};
 
 function renderReportCard(report) {
   var respDeptText = (report.respDepartment && report.respDepartment !== '-' && report.respDepartment !== '― ไม่ระบุ / อื่นๆ ―' && report.respDepartment !== 'ไม่ระบุ' && report.respDepartment !== 'ยังไม่ระบุฝ่ายรับผิดชอบแก้ไข') ? report.respDepartment : 'ยังไม่ระบุฝ่าย';
