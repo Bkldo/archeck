@@ -2171,6 +2171,7 @@ function renderStatsView() {
     'ฝ่ายเทศกิจ', 'ฝ่ายรักษาฯ', 'ฝ่ายการคลัง', 'ฝ่ายการศึกษา', 'ฝ่ายพัฒนาชุมชนฯ'
   ];
   const reportersByDept = {};
+  const reportersAllDepts = {};
   mainDepartments.forEach(function(d) {
     reportersByDept[d] = {};
   });
@@ -2233,8 +2234,14 @@ function renderStatsView() {
 
     const reporterName = String(r.reporterName || '').trim();
     const rDept = String(r.department || '').trim();
-    if (reporterName && mainDepartments.indexOf(rDept) !== -1) {
-      reportersByDept[rDept][reporterName] = (reportersByDept[rDept][reporterName] || 0) + 1;
+    if (reporterName) {
+      if (mainDepartments.indexOf(rDept) !== -1) {
+        reportersByDept[rDept][reporterName] = (reportersByDept[rDept][reporterName] || 0) + 1;
+      }
+      if (rDept && rDept !== '-' && rDept !== 'ไม่ระบุฝ่าย/หน่วยงาน') {
+        if (!reportersAllDepts[rDept]) reportersAllDepts[rDept] = {};
+        reportersAllDepts[rDept][reporterName] = (reportersAllDepts[rDept][reporterName] || 0) + 1;
+      }
     }
   });
   
@@ -2244,13 +2251,15 @@ function renderStatsView() {
   setText('statsCompletedCount', completedCount);
 
   const fastestContainer = document.getElementById('statsTopFastestContainer');
+  let sortedDepts = [];
   if (fastestContainer) {
-    const sortedDepts = Object.keys(fastestMap).map(function(k) {
+    sortedDepts = Object.keys(fastestMap).map(function(k) {
       const item = fastestMap[k];
       return { name: k, avgHours: item.totalHours / item.count, count: item.count };
     }).sort(function(a, b) { return a.avgHours - b.avgHours; });
+  }
     
-    function getMedalSvg(rank) {
+  function getMedalSvg(rank) {
       if (rank === 1) {
         return '<svg width="114" height="130" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="medal-svg">' +
           '<defs>' +
@@ -2371,6 +2380,7 @@ function renderStatsView() {
       }
     }
 
+  if (fastestContainer) {
     const rankConfigs = [
       { rank: 1, label: 'อันดับ 1 (Gold)', badge: '🏆 อันดับ 1 - GOLD', cls: 'rank-1' },
       { rank: 2, label: 'อันดับ 2 (Silver)', badge: '🥈 อันดับ 2 - SILVER', cls: 'rank-2' },
@@ -2400,6 +2410,57 @@ function renderStatsView() {
         '<div class="fastest-meta">' +
           '<span>ระยะเวลาเฉลี่ย/เรื่อง</span>' +
           '<span style="font-weight: 600; color: var(--ink);">' + esc(metaStr) + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  const topReportingDeptsContainer = document.getElementById('statsTopReportingDeptsContainer');
+  if (topReportingDeptsContainer) {
+    const sortedReportingDepts = Object.keys(byDept).filter(function(k) {
+      return k !== 'ไม่ระบุฝ่าย/หน่วยงาน' && k !== '-';
+    }).map(function(k) {
+      return { name: k, total: byDept[k].total };
+    }).sort(function(a, b) { return b.total - a.total; }).slice(0, 3);
+
+    const rankReportingConfigs = [
+      { rank: 1, label: 'อันดับ 1 (Gold)', badge: '🏆 อันดับ 1 - GOLD', cls: 'rank-1' },
+      { rank: 2, label: 'อันดับ 2 (Silver)', badge: '🥈 อันดับ 2 - SILVER', cls: 'rank-2' },
+      { rank: 3, label: 'อันดับ 3 (Bronze)', badge: '🥉 อันดับ 3 - BRONZE', cls: 'rank-3' }
+    ];
+
+    topReportingDeptsContainer.innerHTML = rankReportingConfigs.map(function(rc, idx) {
+      const d = sortedReportingDepts[idx];
+      const name = d ? d.name : 'ยังไม่มีข้อมูลในอันดับนี้';
+      const numStr = d ? d.total + ' เรื่อง' : '-';
+      
+      let topReporterName = '-';
+      if (d && reportersAllDepts[d.name]) {
+         const repMap = reportersAllDepts[d.name];
+         const sortedReps = Object.keys(repMap).sort(function(a, b) { return repMap[b] - repMap[a]; });
+         if (sortedReps.length > 0) {
+            topReporterName = sortedReps[0] + ' (' + repMap[sortedReps[0]] + ' เรื่อง)';
+         }
+      }
+      const metaStr = d ? ('ผู้แจ้งมากสุด: ' + topReporterName) : 'รอการบันทึกข้อมูล';
+
+      return '<div class="fastest-card ' + rc.cls + '">' +
+        '<div class="fastest-card-top">' +
+          '<div class="fastest-card-info">' +
+            '<div class="fastest-card-header">' +
+              '<span class="fastest-rank-badge">' + rc.badge + '</span>' +
+            '</div>' +
+            '<h5 class="fastest-dept-name">' + esc(name) + '</h5>' +
+            '<div class="fastest-time-stat">' +
+              '<span class="fastest-time-num" style="font-size:24px;">' + esc(numStr) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="fastest-medal-box">' +
+            getMedalSvg(rc.rank) +
+          '</div>' +
+        '</div>' +
+        '<div class="fastest-meta">' +
+          '<span style="font-weight: 600; color: var(--ink); font-size: 13px;">' + esc(metaStr) + '</span>' +
         '</div>' +
       '</div>';
     }).join('');
