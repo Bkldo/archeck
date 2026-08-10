@@ -1009,31 +1009,48 @@ function submitReport(event) {
   const form = event.target;
   const button = form.querySelector('[type="submit"]');
   const geoInput = form.querySelector('#geoCodeInput');
-  if (geoInput && geoInput.value) {
-    const coords = parseCoordsString(geoInput.value);
-    if (coords) {
-      const cleanCoords = coords.lat.toFixed(6) + ',' + coords.lng.toFixed(6);
-      geoInput.value = cleanCoords;
-      if (form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + cleanCoords;
-      if (form.geoStamp && !form.geoStamp.value) form.geoStamp.value = new Date().toISOString();
+
+  const doSubmit = function() {
+    if (geoInput && geoInput.value) {
+      const coords = parseCoordsString(geoInput.value);
+      if (coords) {
+        const cleanCoords = coords.lat.toFixed(6) + ',' + coords.lng.toFixed(6);
+        geoInput.value = cleanCoords;
+        if (form.geoAddress) form.geoAddress.value = 'https://www.google.com/maps?q=' + cleanCoords;
+        if (form.geoStamp && !form.geoStamp.value) form.geoStamp.value = new Date().toISOString();
+      }
     }
+    setBusy(button, true);
+    showLoading('กำลังเตรียมข้อมูล...');
+    serverCall('createReport', form)
+      .then(function(result) {
+        hideLoading();
+        if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'ส่งเรื่องไม่สำเร็จ');
+        state.reports = result.reports || state.reports;
+        renderAll(result.stats || buildLocalStats(state.reports));
+        form.reset();
+        updateGeoStatusDisplay('');
+        setDefaultDate();
+        showSuccessPopup(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย\nเลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย');
+        showView('trackView');
+      })
+      .catch(function(err) { hideLoading(); showError(err); })
+      .finally(function() { setBusy(button, false); });
+  };
+
+  if ((!geoInput || !geoInput.value.trim()) && navigator.geolocation) {
+    setBusy(button, true);
+    showLoading('กำลังดึงพิกัดปัจจุบัน...');
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const coords = pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
+      if (geoInput) geoInput.value = coords;
+      doSubmit();
+    }, function() {
+      doSubmit();
+    }, { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 });
+  } else {
+    doSubmit();
   }
-  setBusy(button, true);
-  showLoading('กำลังเตรียมข้อมูล...');
-  serverCall('createReport', form)
-    .then(function(result) {
-      hideLoading();
-      if (!result || !result.ok) throw new Error(result && result.message ? result.message : 'ส่งเรื่องไม่สำเร็จ');
-      state.reports = result.reports || state.reports;
-      renderAll(result.stats || buildLocalStats(state.reports));
-      form.reset();
-      updateGeoStatusDisplay('');
-      setDefaultDate();
-      showSuccessPopup(result.report && result.report.id ? 'ส่งเรื่องเรียบร้อย\nเลขรับเรื่อง ' + result.report.id : 'ส่งเรื่องเรียบร้อย');
-      showView('trackView');
-    })
-    .catch(function(err) { hideLoading(); showError(err); })
-    .finally(function() { setBusy(button, false); });
 }
 
 function captureLocation() {
