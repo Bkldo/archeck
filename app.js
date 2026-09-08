@@ -1561,6 +1561,7 @@ function openSettings() {
   form.ORGANIZATION_NAME.value = state.settings.organizationName || '';
   form.TELEGRAM_BOT_TOKEN.value = state.settings.telegramBotToken || '';
   form.TELEGRAM_CHAT_ID.value = state.settings.telegramChatId || '';
+  if (form.TELEGRAM_DEPT_TAGS) form.TELEGRAM_DEPT_TAGS.value = state.settings.telegramDeptTags || '';
   form.MAP_URL.value = state.settings.mapUrl || '';
   form.DRIVE_FOLDER_ID.value = state.settings.driveFolderId || '';
   if (form.WEB_APP_URL) form.WEB_APP_URL.value = state.settings.webAppUrl || '';
