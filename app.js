@@ -15,8 +15,8 @@ const ACTION_MAP = {
 window.__INITIAL_PAGE__ = new URLSearchParams(window.location.search).get('page') || '';
 window.__INITIAL_EDIT__ = new URLSearchParams(window.location.search).get('edit') || '';
 const state = {
-  token: sessionStorage.getItem('fieldReportToken') || '',
-  user: (function() { try { var u = sessionStorage.getItem('fieldReportUser'); return u ? JSON.parse(u) : null; } catch (e) { return null; } })(),
+  token: localStorage.getItem('fieldReportToken') || '',
+  user: (function() { try { var u = localStorage.getItem('fieldReportUser'); return u ? JSON.parse(u) : null; } catch (e) { return null; } })(),
   settings: {},
   statuses: [],
   priorities: [],
@@ -250,7 +250,7 @@ function loadBootstrap(isManual) {
       
       const initial = String(window.__INITIAL_PAGE__ || '').toLowerCase();
       const initialEdit = String(window.__INITIAL_EDIT__ || '');
-      const savedView = sessionStorage.getItem('activeViewId');
+      const savedView = localStorage.getItem('activeViewId');
       if (initialEdit || initial === 'login' || initial === 'adminpage' || initial === 'admin') {
         showView('adminView');
       } else if (initial === 'table' || initial === 'track') {
@@ -386,7 +386,7 @@ function setDefaultDate() {
 }
 
 function showView(viewId) {
-  if (viewId) sessionStorage.setItem('activeViewId', viewId);
+  if (viewId) localStorage.setItem('activeViewId', viewId);
   document.querySelectorAll('.view').forEach(function(view) { view.classList.toggle('active', view.id === viewId); });
   document.querySelectorAll('.nav-item').forEach(function(button) { button.classList.toggle('active', button.dataset.view === viewId); });
   document.getElementById('pageTitle').textContent = pageTitles[viewId] || pageTitles.reportView;
@@ -1288,10 +1288,10 @@ function submitLogin(event) {
       state.user = result.user;
       state.adminReports = result.reports || [];
       state.settings = result.settings || state.settings;
-      sessionStorage.setItem('fieldReportToken', state.token);
-      if (state.user) sessionStorage.setItem('fieldReportUser', JSON.stringify(state.user));
-      const expireTime = Date.now() + 3600000;
-      sessionStorage.setItem('fieldReportTokenExpire', expireTime.toString());
+      localStorage.setItem('fieldReportToken', state.token);
+      if (state.user) localStorage.setItem('fieldReportUser', JSON.stringify(state.user));
+      const expireTime = Date.now() + 604800000;
+      localStorage.setItem('fieldReportTokenExpire', expireTime.toString());
       applySettings();
       renderAdmin(result.stats);
       startSessionTimer();
@@ -1322,10 +1322,10 @@ function restoreAdminSession() {
       if (!result || !result.ok) throw new Error('session หมดอายุ');
       if (result.user) {
         state.user = result.user;
-        sessionStorage.setItem('fieldReportUser', JSON.stringify(result.user));
+        localStorage.setItem('fieldReportUser', JSON.stringify(result.user));
       } else if (!state.user) {
         try {
-          var saved = sessionStorage.getItem('fieldReportUser');
+          var saved = localStorage.getItem('fieldReportUser');
           state.user = saved ? JSON.parse(saved) : { displayName: 'ผู้ดูแลระบบ', role: 'Administrator' };
         } catch(e) {
           state.user = { displayName: 'ผู้ดูแลระบบ', role: 'Administrator' };
@@ -1336,7 +1336,7 @@ function restoreAdminSession() {
       applySettings();
       renderAdmin(result.stats);
       startSessionTimer();
-      const savedView = sessionStorage.getItem('activeViewId');
+      const savedView = localStorage.getItem('activeViewId');
       if (savedView === 'adminView') showView('adminView');
       const editId = window.__INITIAL_EDIT__;
       if (editId) {
@@ -1595,11 +1595,11 @@ function logoutAdmin(showMessage) {
   state.token = '';
   state.user = null;
   state.adminReports = [];
-  sessionStorage.removeItem('fieldReportToken');
-  sessionStorage.removeItem('fieldReportUser');
-  sessionStorage.removeItem('fieldReportTokenExpire');
-  if (sessionStorage.getItem('activeViewId') === 'adminView') {
-    sessionStorage.setItem('activeViewId', 'reportView');
+  localStorage.removeItem('fieldReportToken');
+  localStorage.removeItem('fieldReportUser');
+  localStorage.removeItem('fieldReportTokenExpire');
+  if (localStorage.getItem('activeViewId') === 'adminView') {
+    localStorage.setItem('activeViewId', 'reportView');
   }
   document.getElementById('loginPanel').classList.remove('hidden');
   document.getElementById('adminPanel').classList.add('hidden');
@@ -1611,10 +1611,10 @@ let sessionTimerId = null;
 function startSessionTimer() {
   clearTimeout(sessionTimerId);
   if (!state.token) return;
-  let expire = Number(sessionStorage.getItem('fieldReportTokenExpire') || 0);
+  let expire = Number(localStorage.getItem('fieldReportTokenExpire') || 0);
   if (!expire) {
-    expire = Date.now() + 3600000;
-    sessionStorage.setItem('fieldReportTokenExpire', expire.toString());
+    expire = Date.now() + 604800000;
+    localStorage.setItem('fieldReportTokenExpire', expire.toString());
   }
   const remaining = expire - Date.now();
   if (remaining <= 0) {
@@ -1625,7 +1625,7 @@ function startSessionTimer() {
 }
 
 function checkSessionExpiration() {
-  const expire = Number(sessionStorage.getItem('fieldReportTokenExpire') || 0);
+  const expire = Number(localStorage.getItem('fieldReportTokenExpire') || 0);
   if (state.token && expire && Date.now() >= expire) {
     handleSessionExpired();
     return false;
