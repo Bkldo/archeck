@@ -1358,13 +1358,22 @@ function restoreAdminSession() {
 function renderAdmin(stats) {
   document.getElementById('loginPanel').classList.add('hidden');
   document.getElementById('adminPanel').classList.remove('hidden');
-  let userLabel = state.user && state.user.displayName ? 'เข้าสู่ระบบ: ' + state.user.displayName : '';
-  if (state.user && state.user.department && state.user.displayName !== state.user.department) {
-    userLabel += ' (' + state.user.department + ')';
+  
+  let userLabel = '';
+  if (state.user) {
+    let dName = state.user.displayName || '';
+    if (/^\?+$/.test(dName)) {
+      dName = state.user.role === 'Administrator' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่';
+    }
+    userLabel = dName ? 'เข้าสู่ระบบ: ' + dName : '';
+    if (state.user.department && dName !== state.user.department) {
+      userLabel += ' (' + state.user.department + ')';
+    }
+    if (state.user.role === 'Administrator' && dName !== 'ผู้ดูแลระบบ') {
+      userLabel += ' [ผู้ดูแลระบบสูงสุด]';
+    }
   }
-  if (state.user && state.user.role === 'Administrator' && state.user.displayName !== 'ผู้ดูแลระบบ') {
-    userLabel += ' [ผู้ดูแลระบบสูงสุด]';
-  }
+  
   document.getElementById('adminUserLabel').textContent = userLabel;
   const settingsBtn = document.getElementById('settingsButton');
   if (settingsBtn) {
@@ -1778,7 +1787,7 @@ function renderUsersTable() {
     const statusBadge = u.active ? '<span class="status-pill done">เปิดใช้งาน</span>' : '<span class="status-pill cancel">ระงับ</span>';
     return '<tr>' +
       '<td><strong>' + esc(u.username) + '</strong></td>' +
-      '<td>' + esc(u.displayName) + '</td>' +
+      '<td>' + esc(/^\?+$/.test(u.displayName) ? (u.role === 'Administrator' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่') : u.displayName) + '</td>' +
       '<td>' + roleBadge + '</td>' +
       '<td><strong style="color:#7c3aed;">' + esc(u.department || '― ทุกฝ่าย (Admin) ―') + '</strong></td>' +
       '<td>' + statusBadge + '</td>' +
@@ -1824,7 +1833,11 @@ function openEditUserModal(username) {
   form.password.required = false;
   form.password.value = '';
   form.password.placeholder = 'ว่างไว้ถ้าไม่เปลี่ยนรหัสผ่าน';
-  form.displayName.value = u.displayName || u.username;
+  let defaultDisplayName = u.displayName || u.username;
+  if (/^\?+$/.test(defaultDisplayName)) {
+    defaultDisplayName = u.role === 'Administrator' ? 'ผู้ดูแลระบบ' : 'เจ้าหน้าที่';
+  }
+  form.displayName.value = defaultDisplayName;
   form.role.value = u.role || 'User';
   form.department.value = u.department || '';
   form.active.value = u.active ? 'TRUE' : 'FALSE';
