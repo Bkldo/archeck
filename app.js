@@ -1004,6 +1004,50 @@ window.toggleMapHeader = toggleMapHeader;
 
 
 
+function analyzeDepartmentByKeywords(text) {
+  if (!text) return null;
+  text = text.toLowerCase();
+  
+  let keywordConfigText = state.settings.aiDeptKeywords;
+  if (!keywordConfigText || typeof keywordConfigText !== 'string' || keywordConfigText.trim() === '') {
+    keywordConfigText = "ฝ่ายโยธา: ถนน,ทางเท้า,ฝาท่อ,ท่อระบายน้ำ,หลุม,บ่อ,สะพาน,น้ำท่วม,ป้าย,ไฟส่องสว่าง,ทรุด,พัง,ร้าว\n" +
+                        "ฝ่ายรักษาฯ: ขยะ,ความสะอาด,ต้นไม้,กิ่งไม้,วัชพืช,หญ้า,เหม็น,สกปรก,ถังขยะ\n" +
+                        "ฝ่ายเทศกิจ: จอดรถ,กีดขวาง,แผงลอย,หาบเร่,ป้ายเถื่อน,จรจัด,ทิ้งขยะ,ความปลอดภัย\n" +
+                        "ฝ่ายสิ่งแวดล้อมฯ: น้ำเสีย,มลพิษ,กลิ่นเหม็น,ควัน,เสียงดัง,ฝุ่น,สัตว์มีพิษ,ยุง\n" +
+                        "ฝ่ายพัฒนาชุมชนฯ: ผู้สูงอายุ,คนพิการ,สวัสดิการ,เบี้ยยังชีพ\n" +
+                        "ฝ่ายรายได้: ภาษี,ป้ายโฆษณา,ค่าธรรมเนียม\n" +
+                        "ฝ่ายทะเบียน: บัตรประชาชน,ทะเบียนบ้าน,ย้ายทะเบียน,เปลี่ยนชื่อ";
+  }
+
+  const lines = keywordConfigText.split('\n');
+  let bestMatch = null;
+  let maxScore = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parts = line.split(':');
+    if (parts.length >= 2) {
+      const dept = parts[0].trim();
+      const keywords = parts[1].split(',').map(function(k) { return k.trim().toLowerCase(); }).filter(Boolean);
+      
+      let score = 0;
+      for (let j = 0; j < keywords.length; j++) {
+        if (text.indexOf(keywords[j]) !== -1) {
+          score++;
+        }
+      }
+      
+      if (score > maxScore) {
+        maxScore = score;
+        bestMatch = dept;
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
 function submitReport(event) {
   event.preventDefault();
   const form = event.target;
@@ -1020,6 +1064,19 @@ function submitReport(event) {
         if (form.geoStamp && !form.geoStamp.value) form.geoStamp.value = new Date().toISOString();
       }
     }
+    
+    // AI วิเคราะห์ฝ่ายที่รับผิดชอบอัตโนมัติ กรณีไม่ระบุ
+    if (form.respDepartment && (!form.respDepartment.value || form.respDepartment.value === "― ไม่ระบุฝ่าย ―")) {
+      const p = form.problem ? form.problem.value : '';
+      const c = form.category ? form.category.value : '';
+      const l = form.locationName ? form.locationName.value : '';
+      const combinedText = p + " " + c + " " + l;
+      const suggestedDept = analyzeDepartmentByKeywords(combinedText);
+      if (suggestedDept) {
+        form.respDepartment.value = suggestedDept;
+      }
+    }
+
     setBusy(button, true);
     showLoading('กำลังเตรียมข้อมูล...');
     serverCall('createReport', form)
@@ -1575,6 +1632,7 @@ function openSettings() {
   form.DRIVE_FOLDER_ID.value = state.settings.driveFolderId || '';
   if (form.WEB_APP_URL) form.WEB_APP_URL.value = state.settings.webAppUrl || '';
   form.PUBLIC_LIST_ENABLED.value = state.settings.publicListEnabled === false ? 'FALSE' : 'TRUE';
+  if (form.AI_DEPT_KEYWORDS) form.AI_DEPT_KEYWORDS.value = state.settings.aiDeptKeywords || '';
   document.getElementById('settingsModal').classList.remove('hidden');
 }
 
